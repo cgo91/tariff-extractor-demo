@@ -30,3 +30,6 @@ data/*.xlsx
 # OS
 .DS_Store
 Thumbs.db
+
+# Capturas: se versionan cuando existan
+!docs/screenshots/*.png
