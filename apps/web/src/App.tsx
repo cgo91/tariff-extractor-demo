@@ -8,6 +8,7 @@ import { AppLayout } from '@/components/AppLayout'
 import { HistoryPage } from '@/pages/HistoryPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { NewOperationPage } from '@/pages/NewOperationPage'
+import { OperationDetailPage } from '@/pages/OperationDetailPage'
 
 export function App() {
   return (
@@ -18,6 +19,7 @@ export function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
             <Route path="/operaciones/nueva" element={<NewOperationPage />} />
+            <Route path="/operaciones/:operationId" element={<OperationDetailPage />} />
             <Route path="/operaciones" element={<HistoryPage />} />
           </Route>
         </Route>

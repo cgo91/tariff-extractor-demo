@@ -54,11 +54,15 @@ async def create_operation(
 async def list_operations(
     current_user: CurrentUserDep,
     operation_service: OperationServiceDep,
+    settings: SettingsDep,
     limit: int = Query(default=50, ge=1, le=200),
 ) -> list[OperationSummaryResponse]:
     """List the caller's operations, newest first."""
     operations = await operation_service.list_for_user(current_user, limit)
-    return [OperationSummaryResponse.from_domain(operation) for operation in operations]
+    return [
+        OperationSummaryResponse.from_domain(operation, settings.confidence_threshold)
+        for operation in operations
+    ]
 
 
 @router.get("/{operation_id}", response_model=OperationResponse)

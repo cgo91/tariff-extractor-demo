@@ -141,7 +141,9 @@ export interface OperationSummary {
   product_name: string | null
   tariff_code: string | null
   formatted_code: string | null
+  nico: string | null
   confidence: number | null
+  requires_review: boolean
   has_pedimento: boolean
   created_at: string
 }

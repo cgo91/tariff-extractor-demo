@@ -210,12 +210,14 @@ class OperationSummaryResponse(BaseModel):
     product_name: str | None
     tariff_code: str | None
     formatted_code: str | None
+    nico: str | None
     confidence: float | None
+    requires_review: bool
     has_pedimento: bool
     created_at: datetime
 
     @classmethod
-    def from_domain(cls, operation: Operation) -> OperationSummaryResponse:
+    def from_domain(cls, operation: Operation, threshold: float) -> OperationSummaryResponse:
         classification = operation.classification
         code = classification.tariff_code if classification else None
         return cls(
@@ -224,7 +226,11 @@ class OperationSummaryResponse(BaseModel):
             product_name=operation.extraction.name if operation.extraction else None,
             tariff_code=code,
             formatted_code=f"{code[:4]}.{code[4:6]}.{code[6:8]}" if code else None,
+            nico=classification.nico if classification else None,
             confidence=classification.confidence if classification else None,
+            requires_review=operation.requires_review(threshold)
+            if classification
+            else False,
             has_pedimento=operation.pedimento_pdf_path is not None,
             created_at=operation.created_at,
         )
