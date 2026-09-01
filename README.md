@@ -16,7 +16,7 @@ demostración** y no tiene validez legal.
 | Fase | Alcance | Estado |
 |---|---|---|
 | 1 | Esqueleto de API y UI, autenticación JWT, catálogo TIGIE y su carga inicial | ✅ Completa |
-| 2 | Subida de foto, extracción con Claude vision, clasificación en dos pasos | ⏳ Pendiente |
+| 2 | Subida de foto, extracción con Claude vision, clasificación en dos pasos | ✅ Completa |
 | 3 | Datos de la operación, cálculo de contribuciones, pedimento PDF | ⏳ Pendiente |
 | 4 | Historial, casos demo, documentación final | ⏳ Pendiente |
 
@@ -93,6 +93,37 @@ API, así que no necesitas configurar nada más.
 
 ---
 
+## Extracción y clasificación
+
+Ambos pasos usan la salida estructurada del SDK (`messages.parse` con un modelo
+Pydantic como `output_format`), de modo que un JSON malformado no es un modo de
+falla que haya que manejar: la respuesta es una instancia validada o un error.
+
+La clasificación ocurre en dos pasos, como pide RF-05:
+
+1. **Candidatos.** Se buscan en Mongo hasta 15 fracciones usando las palabras
+   clave que Claude generó durante la extracción, más el nombre del producto.
+2. **Elección.** Claude recibe la mercancía y esa lista cerrada, y devuelve
+   fracción, NICO, confianza, justificación y alternativas.
+
+El modelo puede desobedecer, así que la fracción elegida **se verifica** contra
+la lista. Si se sale, se reintenta una sola vez con un turno correctivo que
+nombra explícitamente la fracción rechazada y enumera las válidas; si insiste,
+la operación queda en `error` con el mensaje. El NICO se ajusta al que
+efectivamente exista para esa fracción.
+
+Cuando la confianza queda por debajo de `CONFIDENCE_THRESHOLD` (0.6), la
+respuesta marca `requires_review` y la interfaz exige confirmación manual.
+
+Cualquier falla del proveedor se persiste en la operación como
+`status = "error"` con su mensaje antes de propagarse, que es lo que permite a
+la interfaz ofrecer un reintento.
+
+> Estos dos endpoints son los únicos que necesitan `ANTHROPIC_API_KEY`. Sin
+> ella responden **502** con un mensaje explicando qué falta.
+
+---
+
 ## El catálogo de fracciones
 
 El seed elige la fuente automáticamente:
@@ -153,7 +184,18 @@ régimen aduanero mexicano: *pedimento*, *NICO*, *IGI*, *DTA*, *IVA*, *UMT* y
 | POST | `/auth/login` | Devuelve un JWT válido 8 horas |
 | GET | `/auth/me` | Identidad del portador del token |
 | GET | `/catalog/search?q=` | Busca hasta 15 fracciones por relevancia |
+| POST | `/operations` | Sube la fotografía y abre la operación |
+| GET | `/operations` | Historial de operaciones |
+| GET | `/operations/{id}` | Detalle completo |
+| GET | `/operations/{id}/image` | Devuelve la fotografía almacenada |
+| POST | `/operations/{id}/extract` | Extracción con Claude vision |
+| PATCH | `/operations/{id}/extraction` | Corrige el nombre y la función |
+| POST | `/operations/{id}/classify` | Busca candidatos y clasifica |
 | GET | `/health` | Estado del servicio y número de fracciones cargadas |
+
+`PATCH /operations/{id}/extraction` no aparece en la tabla del PRD, pero RF-04
+pide que el usuario pueda corregir el nombre y la función antes de clasificar, y
+esa corrección tiene que persistirse en algún lado.
 
 Todos los endpoints salvo `/auth/login` y `/health` exigen la cabecera
 `Authorization: Bearer <token>`; sin ella responden **401**.

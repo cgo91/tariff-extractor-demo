@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.routers import auth as auth_router
 from app.api.routers import catalog as catalog_router
+from app.api.routers import operations as operations_router
 from app.api.schemas.common import HealthResponse
 from app.core.config import get_settings
 from app.core.dependencies import get_tariff_item_repository
@@ -75,6 +76,7 @@ def create_app() -> FastAPI:
 
     app.include_router(auth_router.router)
     app.include_router(catalog_router.router)
+    app.include_router(operations_router.router)
 
     @app.get("/health", response_model=HealthResponse, tags=["system"])
     async def health(

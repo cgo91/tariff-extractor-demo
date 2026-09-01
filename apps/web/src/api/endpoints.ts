@@ -1,7 +1,13 @@
 /** Typed wrappers around the API routes, grouped by resource. */
 
-import { request } from '@/api/client'
-import type { CatalogSearchResponse, CurrentUser, LoginResponse } from '@/types/api'
+import { fetchBlobUrl, request, upload } from '@/api/client'
+import type {
+  CatalogSearchResponse,
+  CurrentUser,
+  LoginResponse,
+  Operation,
+  OperationSummary,
+} from '@/types/api'
 
 export const authApi = {
   /** Exchanges credentials for an access token. */
@@ -24,5 +30,45 @@ export const catalogApi = {
   search(query: string, signal?: AbortSignal): Promise<CatalogSearchResponse> {
     const params = new URLSearchParams({ q: query })
     return request<CatalogSearchResponse>(`/catalog/search?${params}`, { signal })
+  },
+}
+
+export const operationsApi = {
+  /** Uploads a product photograph and opens an operation. */
+  create(file: File): Promise<Operation> {
+    return upload<Operation>('/operations', file)
+  },
+
+  /** Lists the caller's operations, newest first. */
+  list(): Promise<OperationSummary[]> {
+    return request<OperationSummary[]>('/operations')
+  },
+
+  /** Full detail of one operation. */
+  get(id: string): Promise<Operation> {
+    return request<Operation>(`/operations/${id}`)
+  },
+
+  /** Downloads the stored photograph as an object URL. */
+  imageUrl(id: string): Promise<string> {
+    return fetchBlobUrl(`/operations/${id}/image`)
+  },
+
+  /** Runs Claude vision over the photograph. */
+  extract(id: string): Promise<Operation> {
+    return request<Operation>(`/operations/${id}/extract`, { method: 'POST' })
+  },
+
+  /** Saves the user's corrections to the extracted name and function. */
+  updateExtraction(id: string, name: string, functionText: string): Promise<Operation> {
+    return request<Operation>(`/operations/${id}/extraction`, {
+      method: 'PATCH',
+      body: { name, function: functionText },
+    })
+  },
+
+  /** Searches candidates and asks Claude to choose among them. */
+  classify(id: string): Promise<Operation> {
+    return request<Operation>(`/operations/${id}/classify`, { method: 'POST' })
   },
 }

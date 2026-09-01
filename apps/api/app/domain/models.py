@@ -62,25 +62,27 @@ class ProductExtraction(BaseModel):
     """Product features extracted from the photograph by Claude vision.
 
     Also used as the structured-output schema of the extraction call, so the
-    model literally cannot return a differently shaped payload.
+    model literally cannot return a differently shaped payload. No field
+    carries a default: every one is required, and the ones that may be unknown
+    are nullable instead. That forces the model to state "not visible" rather
+    than silently omitting a key.
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    name: str = Field(description="Commercial name of the product in Spanish")
-    brand: str | None = Field(default=None, description="Brand, if legible")
-    model: str | None = Field(default=None, description="Model or part number, if legible")
-    material: str | None = Field(default=None, description="Predominant material")
-    function: str = Field(description="What the product does, in one sentence")
+    name: str = Field(description="Nombre comercial del producto, en español")
+    brand: str | None = Field(description="Marca, si es legible; null si no se distingue")
+    model: str | None = Field(description="Modelo o número de parte; null si no se distingue")
+    material: str | None = Field(description="Material predominante; null si no se puede saber")
+    function: str = Field(description="Para qué sirve el producto, en una frase")
     technical_specs: list[str] = Field(
-        default_factory=list, description="Observable technical characteristics"
+        description="Características técnicas observables (conectores, potencia, conectividad)"
     )
     visible_text: str | None = Field(
-        default=None, description="Any text readable on the product, label or box"
+        description="Texto legible sobre el producto, su etiqueta o su caja; null si no hay"
     )
     search_keywords: list[str] = Field(
-        default_factory=list,
-        description="Spanish keywords for searching the tariff catalog",
+        description="Entre 4 y 8 palabras clave en español para buscar en el catálogo TIGIE"
     )
 
 
@@ -91,24 +93,32 @@ class ClassificationAlternative(BaseModel):
 
     tariff_code: TariffCode
     nico: NicoCode
-    reason: str
+    reason: str = Field(description="Por qué esta fracción es plausible pero no la elegida")
 
 
-class TariffClassification(BaseModel):
-    """The classification proposed by Claude and, once reviewed, confirmed.
+class TariffClassificationProposal(BaseModel):
+    """What Claude returns from the classification call.
 
-    Doubles as the structured-output schema of the classification call.
-    ``confirmed_by_user`` is never produced by the model: it is set by the
-    review endpoint, which is why it carries a default.
+    Deliberately excludes ``confirmed_by_user``: that flag belongs to the human
+    review step and the model must have no way to set it.
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    tariff_code: TariffCode
-    nico: NicoCode
-    confidence: float = Field(ge=0.0, le=1.0)
-    rationale: str
-    alternatives: list[ClassificationAlternative] = Field(default_factory=list)
+    tariff_code: TariffCode = Field(description="Fracción de 8 dígitos, sin puntos")
+    nico: NicoCode = Field(description="NICO de 2 dígitos")
+    confidence: float = Field(ge=0.0, le=1.0, description="Confianza entre 0 y 1")
+    rationale: str = Field(
+        description="Justificación citando las Reglas Generales 1 y 6 de la LIGIE"
+    )
+    alternatives: list[ClassificationAlternative] = Field(
+        description="Hasta 3 fracciones alternas consideradas y descartadas"
+    )
+
+
+class TariffClassification(TariffClassificationProposal):
+    """The proposal plus the outcome of the human review (RF-06)."""
+
     confirmed_by_user: bool = False
 
 

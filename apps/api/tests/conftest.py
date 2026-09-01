@@ -7,11 +7,13 @@ environment variable being set.
 
 from __future__ import annotations
 
+import io
 import json
 import os
 from pathlib import Path
 
 import pytest
+from PIL import Image
 
 from app.core.security import JwtTokenService, PasswordHasher
 from app.domain.models import TariffItem, User
@@ -22,6 +24,15 @@ from app.repositories.memory import (
 )
 from app.services.auth_service import AuthService
 from app.services.catalog_service import CatalogService
+from app.services.classification_service import ClassificationService
+from app.services.extraction_service import ExtractionService
+from app.services.image_processing import ImageProcessor
+from app.services.operation_service import OperationService
+from tests.doubles import (
+    InMemoryFileStorage,
+    StubTariffClassifier,
+    StubVisionExtractor,
+)
 
 CATALOG_RELATIVE_PATH = Path("data") / "catalog" / "tariff_items.json"
 
@@ -48,6 +59,9 @@ CATALOG_PATH = _locate_catalog()
 
 DEMO_EMAIL = "demo@aduana.mx"
 DEMO_PASSWORD = "demo1234"
+
+# Mirrors CONFIDENCE_THRESHOLD in .env.example.
+CONFIDENCE_THRESHOLD = 0.6
 
 
 @pytest.fixture
@@ -103,3 +117,76 @@ def auth_service(
 @pytest.fixture
 def catalog_service(tariff_item_repository: InMemoryTariffItemRepository) -> CatalogService:
     return CatalogService(tariff_item_repository)
+
+# --- Phase 2 fixtures: uploads, extraction and classification ---------------
+
+
+@pytest.fixture
+def file_storage() -> InMemoryFileStorage:
+    return InMemoryFileStorage()
+
+
+@pytest.fixture
+def image_processor() -> ImageProcessor:
+    return ImageProcessor(max_bytes=10 * 1024 * 1024)
+
+
+@pytest.fixture
+def demo_user() -> User:
+    """A user object standing in for the authenticated caller."""
+    return User(id="user-1", email=DEMO_EMAIL, password_hash="unused")
+
+
+@pytest.fixture
+def jpeg_bytes() -> bytes:
+    """A tiny but genuine JPEG, so the processor exercises real decoding."""
+    buffer = io.BytesIO()
+    Image.new("RGB", (48, 32), color=(180, 40, 60)).save(buffer, format="JPEG")
+    return buffer.getvalue()
+
+
+@pytest.fixture
+def png_bytes() -> bytes:
+    """A tiny PNG with an alpha channel."""
+    buffer = io.BytesIO()
+    Image.new("RGBA", (24, 24), color=(10, 120, 90, 128)).save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+@pytest.fixture
+def operation_service(
+    operation_repository: InMemoryOperationRepository,
+    file_storage: InMemoryFileStorage,
+    image_processor: ImageProcessor,
+) -> OperationService:
+    return OperationService(operation_repository, file_storage, image_processor)
+
+
+@pytest.fixture
+def vision_extractor() -> StubVisionExtractor:
+    return StubVisionExtractor()
+
+
+@pytest.fixture
+def tariff_classifier() -> StubTariffClassifier:
+    return StubTariffClassifier()
+
+
+@pytest.fixture
+def extraction_service(
+    operation_service: OperationService,
+    operation_repository: InMemoryOperationRepository,
+    vision_extractor: StubVisionExtractor,
+) -> ExtractionService:
+    return ExtractionService(operation_service, operation_repository, vision_extractor)
+
+
+@pytest.fixture
+def classification_service(
+    operation_repository: InMemoryOperationRepository,
+    catalog_service: CatalogService,
+    tariff_classifier: StubTariffClassifier,
+) -> ClassificationService:
+    return ClassificationService(
+        operation_repository, catalog_service, tariff_classifier, CONFIDENCE_THRESHOLD
+    )

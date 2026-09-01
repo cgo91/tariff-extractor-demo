@@ -72,6 +72,42 @@ async function toApiError(response: Response): Promise<ApiError> {
   return new ApiError(response.status, code, message)
 }
 
+/** Uploads a file as multipart/form-data and returns the parsed body. */
+export async function upload<T>(path: string, file: File): Promise<T> {
+  const form = new FormData()
+  form.append('file', file)
+
+  const headers: Record<string, string> = { Accept: 'application/json' }
+  const token = readToken()
+  if (token) {
+    headers.Authorization = `Bearer ${token}`
+  }
+
+  // Content-Type is deliberately omitted: the browser must set it so the
+  // multipart boundary is included.
+  const response = await fetch(`${BASE_URL}${path}`, { method: 'POST', headers, body: form })
+
+  if (!response.ok) {
+    throw await toApiError(response)
+  }
+  return (await response.json()) as T
+}
+
+/** Fetches a binary resource as an object URL the browser can render. */
+export async function fetchBlobUrl(path: string): Promise<string> {
+  const headers: Record<string, string> = {}
+  const token = readToken()
+  if (token) {
+    headers.Authorization = `Bearer ${token}`
+  }
+
+  const response = await fetch(`${BASE_URL}${path}`, { headers })
+  if (!response.ok) {
+    throw await toApiError(response)
+  }
+  return URL.createObjectURL(await response.blob())
+}
+
 /** Performs a JSON request and returns the parsed body. */
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, anonymous = false, signal } = options
