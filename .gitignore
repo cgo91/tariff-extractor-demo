@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Environment
+.env
+.env.local
+
+# Runtime data (generated at runtime, never committed)
+data/uploads/*
+data/pedimentos/*
+data/demo/*
+!data/**/.gitkeep
+!data/demo/sources.json
+
+# SAT / SNICE source spreadsheets (large, downloaded by the user)
+data/*.xls
+data/*.xlsx
+
+# OS
+.DS_Store
+Thumbs.db

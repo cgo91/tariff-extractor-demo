@@ -1,0 +1,42 @@
+# Local development stack: FastAPI backend + MongoDB.
+# The React frontend runs outside Docker with `pnpm dev` (see apps/web).
+services:
+  mongo:
+    image: mongo:7
+    container_name: tariff-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: tariff-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Override the URI so the API always reaches Mongo through the compose network.
+      MONGO_URI: mongodb://mongo:27017
+    ports:
+      - "8000:8000"
+    volumes:
+      # Uploaded images, generated PDFs and the seed catalog live on the host.
+      - ./data:/data
+      # Source mount enables uvicorn --reload and lets pytest see the suite.
+      - ./apps/api/app:/srv/app
+      - ./apps/api/tests:/srv/tests
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+volumes:
+  mongo_data:

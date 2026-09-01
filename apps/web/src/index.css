@@ -1,0 +1,177 @@
+@import 'tailwindcss';
+
+/*
+  Design direction: the interface borrows the vocabulary of the document it
+  produces. The pedimento (Anexo 22) is a grid of hairline boxes, each with a
+  tiny uppercase label in its corner and a monospaced value inside. Every
+  surface here is built from that same block. No shadows, no rounded corners:
+  the depth cue is the rule, not the drop shadow.
+*/
+@theme {
+  --color-paper: #fbfaf7;
+  --color-paper-sunk: #f2f1ec;
+  --color-ink: #16211d;
+  --color-ink-soft: #55605b;
+  --color-ink-faint: #8b948f;
+  --color-rule: #d5d9d3;
+  --color-rule-strong: #b3bab5;
+
+  /* Guinda: the identity colour of the Mexican federal government. */
+  --color-accent: #9f2241;
+  --color-accent-sunk: #7d1a33;
+  --color-accent-wash: #f7ecef;
+
+  /* Confirmed / high confidence. */
+  --color-verified: #1f6f4a;
+  --color-verified-wash: #ebf3ee;
+
+  /* Requires review / low confidence. */
+  --color-flag: #b8631b;
+  --color-flag-wash: #fbf0e5;
+
+  --font-sans: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', monospace;
+
+  --radius-none: 0px;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv05', 'ss01';
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Keyboard focus stays visible everywhere; it is never removed. */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--color-accent);
+    color: var(--color-paper);
+  }
+}
+
+@layer components {
+  /*
+    The signature element. A pedimento field: hairline box, corner label in
+    small caps, monospaced value. Reused for read-only data and for inputs.
+  */
+  .field {
+    border: 1px solid var(--color-rule);
+    background-color: #ffffff;
+    padding: 0.5rem 0.75rem 0.625rem;
+  }
+
+  .field-label {
+    display: block;
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-ink-faint);
+    line-height: 1.2;
+  }
+
+  .field-value {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-ink);
+    line-height: 1.5;
+  }
+
+  .field-input {
+    width: 100%;
+    margin-top: 0.125rem;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-ink);
+    line-height: 1.5;
+  }
+
+  .field-input::placeholder {
+    color: var(--color-ink-faint);
+  }
+
+  .field-input:focus {
+    outline: none;
+  }
+
+  /* The whole box lights up when the input inside it is focused. */
+  .field:focus-within {
+    border-color: var(--color-accent);
+    box-shadow: inset 0 0 0 1px var(--color-accent);
+  }
+
+  .eyebrow {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-ink-faint);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid transparent;
+    padding: 0.625rem 1.25rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition:
+      background-color 120ms ease,
+      color 120ms ease,
+      border-color 120ms ease;
+  }
+
+  .btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  .btn-primary {
+    background-color: var(--color-accent);
+    color: var(--color-paper);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--color-accent-sunk);
+  }
+
+  .btn-secondary {
+    border-color: var(--color-rule-strong);
+    background-color: transparent;
+    color: var(--color-ink);
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    background-color: var(--color-paper-sunk);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
