@@ -120,6 +120,18 @@ class TariffClassification(TariffClassificationProposal):
     """The proposal plus the outcome of the human review (RF-06)."""
 
     confirmed_by_user: bool = False
+    original_tariff_code: TariffCode | None = Field(
+        default=None,
+        description="Code Claude proposed, kept when the reviewer chose a different one",
+    )
+
+    @property
+    def was_overridden(self) -> bool:
+        """True when a human replaced the model's choice."""
+        return (
+            self.original_tariff_code is not None
+            and self.original_tariff_code != self.tariff_code
+        )
 
 
 class Importer(BaseModel):

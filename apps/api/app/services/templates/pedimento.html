@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="es-MX">
+  <head>
+    <meta charset="utf-8" />
+    <title>Pedimento {{ header.number }}</title>
+    <style>
+      /*
+        Layout inspired by the Anexo 22 filling instructions: a grid of ruled
+        boxes, each carrying a small uppercase label and a monospaced value.
+        DejaVu ships with the API image, so accents render the same everywhere.
+      */
+      @page {
+        size: A4;
+        margin: 12mm 12mm 16mm;
+        @bottom-center {
+          content: "Documento simulado con fines de demostración · página " counter(page) " de " counter(pages);
+          font-family: "DejaVu Sans", sans-serif;
+          font-size: 6.5pt;
+          color: #6b736e;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "DejaVu Sans", sans-serif;
+        font-size: 8pt;
+        color: #16211d;
+        line-height: 1.35;
+      }
+
+      .masthead {
+        border-bottom: 2px solid #16211d;
+        padding-bottom: 4mm;
+        margin-bottom: 3mm;
+      }
+
+      .masthead h1 {
+        margin: 0;
+        font-size: 13pt;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+
+      .masthead .subtitle {
+        margin: 1mm 0 0;
+        font-size: 7pt;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #6b736e;
+      }
+
+      .simulated {
+        float: right;
+        border: 1px solid #9f2241;
+        color: #9f2241;
+        padding: 1.5mm 3mm;
+        font-size: 6.5pt;
+        font-weight: bold;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      h2 {
+        margin: 4mm 0 1.5mm;
+        font-size: 7pt;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #16211d;
+        border-bottom: 1px solid #16211d;
+        padding-bottom: 1mm;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+
+      td {
+        border: 0.5pt solid #b3bab5;
+        padding: 1.5mm 2mm;
+        vertical-align: top;
+        word-wrap: break-word;
+      }
+
+      .label {
+        display: block;
+        font-size: 5.5pt;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #6b736e;
+      }
+
+      .value {
+        display: block;
+        margin-top: 0.5mm;
+        font-family: "DejaVu Sans Mono", monospace;
+        font-size: 8pt;
+      }
+
+      .value-lg {
+        font-size: 11pt;
+        font-weight: bold;
+        letter-spacing: 0.02em;
+      }
+
+      .description {
+        font-family: "DejaVu Sans", sans-serif;
+        font-size: 7.5pt;
+      }
+
+      /* Settlement: figures right-aligned so the decimal points line up. */
+      .settlement td {
+        border: 0;
+        border-bottom: 0.5pt solid #d5d9d3;
+        padding: 1.5mm 2mm;
+      }
+
+      .settlement .concept {
+        font-size: 7.5pt;
+      }
+
+      .settlement .amount {
+        text-align: right;
+        font-family: "DejaVu Sans Mono", monospace;
+        font-size: 8.5pt;
+      }
+
+      .settlement .rate {
+        text-align: right;
+        font-family: "DejaVu Sans Mono", monospace;
+        font-size: 7pt;
+        color: #6b736e;
+      }
+
+      .settlement .total td {
+        border-top: 1.5pt solid #16211d;
+        border-bottom: 0;
+        padding-top: 2mm;
+        font-weight: bold;
+        font-size: 9.5pt;
+      }
+
+      .rationale {
+        border-left: 2pt solid #b3bab5;
+        padding: 1mm 0 1mm 3mm;
+        font-size: 7pt;
+        color: #55605b;
+      }
+
+      .review-flag {
+        border-left: 2pt solid #b8631b;
+        background: #fbf0e5;
+        padding: 2mm 3mm;
+        font-size: 7pt;
+        margin-top: 2mm;
+      }
+
+      .disclaimer {
+        margin-top: 6mm;
+        border: 1px solid #16211d;
+        padding: 3mm;
+        font-size: 7pt;
+        line-height: 1.5;
+      }
+
+      .signatures {
+        margin-top: 8mm;
+        width: 100%;
+      }
+
+      .signatures td {
+        border: 0;
+        border-top: 0.5pt solid #16211d;
+        padding-top: 1.5mm;
+        text-align: center;
+        font-size: 6.5pt;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #6b736e;
+        width: 45%;
+      }
+
+      .signatures .spacer {
+        border: 0;
+        width: 10%;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="masthead">
+      <span class="simulated">Simulado</span>
+      <h1>Pedimento de importación</h1>
+      <p class="subtitle">
+        Layout inspirado en el Anexo 22 de las RGCE · Sin validez legal
+      </p>
+    </header>
+
+    <h2>Datos generales</h2>
+    <table>
+      <tr>
+        <td style="width: 34%">
+          <span class="label">Número de pedimento</span>
+          <span class="value value-lg">{{ header.number }}</span>
+        </td>
+        <td style="width: 16%">
+          <span class="label">Tipo de operación</span>
+          <span class="value">{{ header.operation_type }}</span>
+        </td>
+        <td style="width: 16%">
+          <span class="label">Clave de pedimento</span>
+          <span class="value">{{ header.pedimento_key }}</span>
+        </td>
+        <td style="width: 34%">
+          <span class="label">Aduana / sección de entrada</span>
+          <span class="value">{{ header.customs_office }}</span>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <span class="label">Fecha de emisión</span>
+          <span class="value">{{ header.issued_at }}</span>
+        </td>
+        <td>
+          <span class="label">Tipo de cambio</span>
+          <span class="value">{{ details.exchange_rate }}</span>
+        </td>
+        <td>
+          <span class="label">Valor factura (USD)</span>
+          <span class="value">{{ details.invoice_value_usd }}</span>
+        </td>
+        <td>
+          <span class="label">Régimen</span>
+          <span class="value">{{ header.regime }}</span>
+        </td>
+      </tr>
+    </table>
+
+    <h2>Datos del importador</h2>
+    <table>
+      <tr>
+        <td style="width: 30%">
+          <span class="label">RFC</span>
+          <span class="value">{{ importer.rfc }}</span>
+        </td>
+        <td style="width: 70%">
+          <span class="label">Razón social</span>
+          <span class="value">{{ importer.legal_name }}</span>
+        </td>
+      </tr>
+    </table>
+
+    <h2>Datos del proveedor</h2>
+    <table>
+      <tr>
+        <td style="width: 70%">
+          <span class="label">Nombre o razón social</span>
+          <span class="value">{{ supplier.name }}</span>
+        </td>
+        <td style="width: 30%">
+          <span class="label">País</span>
+          <span class="value">{{ supplier.country }}</span>
+        </td>
+      </tr>
+    </table>
+
+    <h2>Partida 1</h2>
+    <table>
+      <tr>
+        <td style="width: 25%">
+          <span class="label">Fracción arancelaria</span>
+          <span class="value value-lg">{{ item.formatted_code }}</span>
+        </td>
+        <td style="width: 11%">
+          <span class="label">NICO</span>
+          <span class="value value-lg">{{ item.nico }}</span>
+        </td>
+        <td style="width: 10%">
+          <span class="label">UMT</span>
+          <span class="value">{{ item.unit_of_measure }}</span>
+        </td>
+        <td style="width: 12%">
+          <span class="label">Cantidad</span>
+          <span class="value">{{ details.quantity }}</span>
+        </td>
+        <td style="width: 14%">
+          <span class="label">País de origen</span>
+          <span class="value">{{ details.origin_country }}</span>
+        </td>
+        <td style="width: 28%">
+          <span class="label">Valor en aduana (MXN)</span>
+          <span class="value">{{ settlement.customs_value }}</span>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="6">
+          <span class="label">Descripción de la mercancía</span>
+          <span class="value description">{{ item.description }}</span>
+        </td>
+      </tr>
+      {% if product.name %}
+      <tr>
+        <td colspan="6">
+          <span class="label">Mercancía declarada</span>
+          <span class="value description">
+            {{ product.name }}{% if product.brand %} · marca {{ product.brand }}{% endif %}{% if
+            product.model %} · modelo {{ product.model }}{% endif %}
+          </span>
+        </td>
+      </tr>
+      {% endif %}
+    </table>
+
+    <h2>Determinación de contribuciones</h2>
+    <table class="settlement">
+      <tr>
+        <td class="concept" style="width: 52%">Valor en aduana</td>
+        <td class="rate" style="width: 24%">base gravable</td>
+        <td class="amount" style="width: 24%">{{ settlement.customs_value }}</td>
+      </tr>
+      <tr>
+        <td class="concept">IGI · Impuesto General de Importación</td>
+        <td class="rate">{{ item.igi_percentage }}</td>
+        <td class="amount">{{ settlement.igi_amount }}</td>
+      </tr>
+      <tr>
+        <td class="concept">DTA · Derecho de Trámite Aduanero</td>
+        <td class="rate">8 al millar</td>
+        <td class="amount">{{ settlement.dta_amount }}</td>
+      </tr>
+      <tr>
+        <td class="concept">IVA · Impuesto al Valor Agregado</td>
+        <td class="rate">16 %</td>
+        <td class="amount">{{ settlement.iva_amount }}</td>
+      </tr>
+      <tr class="total">
+        <td class="concept">Total de contribuciones (MXN)</td>
+        <td class="rate"></td>
+        <td class="amount">{{ settlement.total }}</td>
+      </tr>
+    </table>
+
+    <h2>Sustento de la clasificación</h2>
+    <p class="rationale">{{ classification.rationale }}</p>
+    <table style="margin-top: 2mm">
+      <tr>
+        <td style="width: 33%">
+          <span class="label">Confianza del modelo</span>
+          <span class="value">{{ classification.confidence }}</span>
+        </td>
+        <td style="width: 33%">
+          <span class="label">Confirmada por el usuario</span>
+          <span class="value">{{ 'Sí' if classification.confirmed_by_user else 'No' }}</span>
+        </td>
+        <td style="width: 34%">
+          <span class="label">Propuesta original del modelo</span>
+          <span class="value">{{ classification.original_code or 'Sin cambios' }}</span>
+        </td>
+      </tr>
+    </table>
+    {% if classification.was_overridden %}
+    <p class="review-flag">
+      La fracción propuesta por el modelo fue sustituida por el usuario tras la
+      revisión manual.
+    </p>
+    {% endif %}
+
+    <div class="disclaimer">
+      <strong>Documento simulado con fines de demostración.</strong> Este
+      pedimento no tiene validez legal, no fue transmitido a la Ventanilla Única
+      de Comercio Exterior y no está firmado electrónicamente. La clasificación
+      arancelaria mostrada es una propuesta asistida por un modelo de lenguaje;
+      la determinación final de la fracción y el NICO es responsabilidad del
+      agente aduanal. No se consideraron regulaciones ni restricciones no
+      arancelarias, preferencias por tratados, cupos ni cuotas compensatorias.
+    </div>
+
+    <table class="signatures">
+      <tr>
+        <td>Importador o su representante legal</td>
+        <td class="spacer"></td>
+        <td>Agente aduanal</td>
+      </tr>
+    </table>
+  </body>
+</html>

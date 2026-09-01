@@ -55,6 +55,20 @@ class Settings(BaseSettings):
     confidence_threshold: float = Field(default=0.6, alias="CONFIDENCE_THRESHOLD")
     default_exchange_rate: float = Field(default=17.50, alias="DEFAULT_EXCHANGE_RATE")
 
+    # Mock counterparties preloaded into the operation form (RF-07), so the
+    # demo can be completed in one click without inventing data on camera.
+    default_origin_country: str = Field(default="CN", alias="DEFAULT_ORIGIN_COUNTRY")
+    default_importer_rfc: str = Field(default="XAXX010101000", alias="DEFAULT_IMPORTER_RFC")
+    default_importer_name: str = Field(
+        default="Importadora Demo SA de CV", alias="DEFAULT_IMPORTER_NAME"
+    )
+    default_supplier_name: str = Field(
+        default="Shenzhen Electronics Co Ltd", alias="DEFAULT_SUPPLIER_NAME"
+    )
+    default_supplier_country: str = Field(
+        default="CN", alias="DEFAULT_SUPPLIER_COUNTRY"
+    )
+
     # --- API ---------------------------------------------------------------
     # Kept as plain text: pydantic-settings would otherwise try to JSON-decode
     # a list-typed field, which makes the .env file awkward to write by hand.

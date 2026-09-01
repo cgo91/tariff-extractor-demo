@@ -2,10 +2,12 @@
 
 import { fetchBlobUrl, request, upload } from '@/api/client'
 import type {
+  AppConfig,
   CatalogSearchResponse,
   CurrentUser,
   LoginResponse,
   Operation,
+  OperationDetails,
   OperationSummary,
 } from '@/types/api'
 
@@ -70,5 +72,38 @@ export const operationsApi = {
   /** Searches candidates and asks Claude to choose among them. */
   classify(id: string): Promise<Operation> {
     return request<Operation>(`/operations/${id}/classify`, { method: 'POST' })
+  },
+
+  /** Confirms the proposal, or replaces it with another catalog code. */
+  confirmClassification(id: string, tariffCode: string, nico: string): Promise<Operation> {
+    return request<Operation>(`/operations/${id}/classification`, {
+      method: 'PATCH',
+      body: { tariff_code: tariffCode, nico, confirmed_by_user: true },
+    })
+  },
+
+  /** Saves the commercial data and settles the contributions. */
+  saveDetails(id: string, details: OperationDetails): Promise<Operation> {
+    return request<Operation>(`/operations/${id}/details`, {
+      method: 'PATCH',
+      body: details,
+    })
+  },
+
+  /** Renders the simulated pedimento PDF. */
+  generatePedimento(id: string): Promise<Operation> {
+    return request<Operation>(`/operations/${id}/pedimento`, { method: 'POST' })
+  },
+
+  /** Downloads the pedimento as an object URL. */
+  pedimentoUrl(id: string): Promise<string> {
+    return fetchBlobUrl(`/operations/${id}/pedimento`)
+  },
+}
+
+export const configApi = {
+  /** Thresholds and form defaults owned by the server. */
+  get(): Promise<AppConfig> {
+    return request<AppConfig>('/config')
   },
 }

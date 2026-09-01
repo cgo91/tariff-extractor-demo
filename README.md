@@ -17,7 +17,7 @@ demostración** y no tiene validez legal.
 |---|---|---|
 | 1 | Esqueleto de API y UI, autenticación JWT, catálogo TIGIE y su carga inicial | ✅ Completa |
 | 2 | Subida de foto, extracción con Claude vision, clasificación en dos pasos | ✅ Completa |
-| 3 | Datos de la operación, cálculo de contribuciones, pedimento PDF | ⏳ Pendiente |
+| 3 | Datos de la operación, cálculo de contribuciones, pedimento PDF | ✅ Completa |
 | 4 | Historial, casos demo, documentación final | ⏳ Pendiente |
 
 ---
@@ -42,12 +42,26 @@ Edita `.env` y define al menos:
 
 | Variable | Para qué sirve |
 |---|---|
-| `ANTHROPIC_API_KEY` | Extracción y clasificación con Claude (fase 2) |
+| `ANTHROPIC_API_KEY` | Extracción y clasificación con Claude |
 | `JWT_SECRET` | Firma de los tokens; usa 32 caracteres o más |
 | `SEED_USER_EMAIL` / `SEED_USER_PASSWORD` | Credenciales del único usuario de la demo |
 
 El resto tiene valores por defecto que funcionan tal cual. Ningún secreto se
 versiona: `.env` está en `.gitignore`.
+
+> **Dos detalles que cuestan una hora si se pasan por alto.**
+>
+> 1. **Guarda `.env` con saltos de línea LF, no CRLF.** Docker Compose no recorta
+>    el `
+` final, así que una clave editada en un editor de Windows llega al
+>    contenedor con un retorno de carro pegado y la API responde
+>    `401 API key is invalid`.
+> 2. **Después de cambiar `.env`, recrea el contenedor:**
+>    ```bash
+>    docker compose up -d --force-recreate api
+>    ```
+>    `docker compose restart` **no** sirve: reinicia el proceso reutilizando el
+>    entorno con el que se creó el contenedor y nunca vuelve a leer `env_file`.
 
 ### 2. API y base de datos
 
@@ -124,6 +138,101 @@ la interfaz ofrecer un reintento.
 
 ---
 
+## Resultados medidos
+
+Corrida completa contra la API de Claude con las nueve fotografías de
+`data/demo/`, modelo `claude-opus-5`:
+
+| Producto | Fracción propuesta | Confianza | Partida esperada |
+|---|---|---|---|
+| Audífonos | 8518.30.01 | 0.82 | ✅ 8518 |
+| Bocina bluetooth | 8518.22.01 | 0.55 · **revisión** | ✅ 8518 |
+| Cargador USB | 8504.40.01 | 0.58 · **revisión** | ✅ 8504 |
+| Cable USB | 8544.42.01 | 0.92 | ✅ 8544 |
+| Mouse | 8471.60.02 | 0.97 | ✅ 8471 |
+| Power bank | 8507.60.01 | 0.94 | ✅ 8507 |
+| Smartphone | 8517.13.01 | 0.94 | ✅ 8517 |
+| Router | 8517.62.02 | 0.95 | ✅ 8517 |
+| Smartwatch | 8517.62.03 | 0.72–0.83 | caso ambiguo |
+
+**8 de 8** productos con partida asignable cayeron en la esperada, en dos
+corridas independientes. Todas las extracciones devolvieron JSON válido.
+
+**Latencia.** Extracción 7–10 s; clasificación 10–17 s con
+`CLAUDE_CLASSIFICATION_EFFORT=medium`. Con `high` la clasificación sube a
+15–21 s y algunas llamadas rebasan el límite de 20 s del PRD. Con la extracción
+fija y dos corridas por producto, `medium` y `high` eligieron **la misma
+fracción con la misma confianza**, así que el valor por defecto es `medium`.
+
+**Los casos de revisión manual son la bocina y el cargador, no el smartwatch.**
+
+- La **bocina** es ambigua de forma reproducible (0.55–0.57): alterna entre
+  8518.21 —un solo altavoz montado en su caja— y 8518.22 —varios altavoces en
+  la misma caja—, una distinción que la fotografía no permite resolver.
+- El **cargador** de la foto es un módulo empotrable de doble puerto USB, y el
+  modelo razona explícitamente entre la partida 85.04 (convertidor estático) y
+  la 85.36 (tomas de corriente) antes de quedarse en 0.58.
+- El **smartwatch** clasifica con seguridad en 8517.62 citando la Nota 1 f) del
+  Capítulo 91, con 9102.12.01 como primera alternativa en todas las corridas.
+  `vision.md` lo anticipaba como el caso ambiguo, pero el tratamiento
+  arancelario de los relojes con conectividad está más asentado de lo que ese
+  documento suponía. La confianza baja del 91 aparece solo cuando la extracción
+  no alcanza a leer la conectividad del aparato.
+
+**La confianza varía ±0.1 entre corridas** con la misma entrada. Cerca del
+umbral de 0.6 eso hace que un mismo producto pueda pedir revisión en una
+corrida y no en la siguiente; es inherente al modelo, no un defecto del
+sistema.
+
+Durante esta medición se corrigió un defecto del catálogo curado: la fracción
+del smartwatch describía «incluidos los relojes inteligentes (smartwatch)», lo
+que le regalaba la respuesta al modelo. Las descripciones se mantienen ahora
+genéricas, como en el texto oficial de la TIGIE.
+
+`prd.md` y `vision.md` fueron actualizados con estos resultados: los criterios
+de aceptación ahora piden que **al menos un** producto dispare revisión manual,
+en lugar de nombrar al smartwatch.
+
+### Fotografías de demostración
+
+`data/demo/` trae las nueve fotos usadas en la medición, descargadas de
+Wikimedia Commons. `data/demo/sources.json` registra archivo, licencia, autoría
+y enlace de cada una; todas son CC0, CC BY o CC BY-SA. Las imágenes no se
+versionan: sustitúyelas por fotos propias conservando los mismos nombres de
+archivo.
+
+---
+
+## Revisión, liquidación y pedimento
+
+**Revisión (RF-06).** El usuario confirma la propuesta, elige una de las
+alternativas, o busca cualquier otra fracción del catálogo. La fracción se
+valida contra el catálogo antes de aceptarse, porque de ahí sale el IGI que
+determina lo que se paga: un código inventado rompería la liquidación.
+
+Cuando el usuario elige una fracción distinta, la propuesta original se conserva
+en `original_tariff_code`. Ese campo no está en el modelo del PRD, pero sin él
+el expediente pierde justo lo que la demo quiere mostrar: qué propuso el sistema
+y qué decidió la persona. La liquidación previa se descarta, porque se calculó
+con el IGI de la fracción anterior.
+
+**Liquidación (RF-08).** Servicio puro, sin E/S ni estado. La aritmética corre en
+`Decimal` porque 0.008 y 0.16 no son representables en punto flotante binario.
+Cada importe se redondea a centavos conforme se produce y los siguientes derivan
+de los ya redondeados: cuesta una fracción de centavo de precisión y compra algo
+que en un documento impreso vale más, que las cifras mostradas sumen exactamente
+el total mostrado. La tasa de IGI se toma del catálogo, nunca de la petición.
+
+**Pedimento (RF-09).** Plantilla Jinja2 con layout inspirado en el Anexo 22,
+renderizada por WeasyPrint detrás de la interfaz `PdfRenderer`. El número de
+pedimento se deriva del identificador de la operación, de modo que volver a
+generar el documento no cambia el número impreso en él.
+
+Si la clasificación todavía requiere revisión manual, el endpoint responde
+**409**: por debajo del umbral no hay documento sin que una persona lo asuma.
+
+---
+
 ## El catálogo de fracciones
 
 El seed elige la fuente automáticamente:
@@ -191,11 +300,19 @@ régimen aduanero mexicano: *pedimento*, *NICO*, *IGI*, *DTA*, *IVA*, *UMT* y
 | POST | `/operations/{id}/extract` | Extracción con Claude vision |
 | PATCH | `/operations/{id}/extraction` | Corrige el nombre y la función |
 | POST | `/operations/{id}/classify` | Busca candidatos y clasifica |
+| PATCH | `/operations/{id}/classification` | Confirma o corrige la fracción |
+| PATCH | `/operations/{id}/details` | Datos de la operación y liquidación |
+| POST | `/operations/{id}/pedimento` | Genera el PDF |
+| GET | `/operations/{id}/pedimento` | Descarga el PDF |
+| GET | `/config` | Umbral de revisión y valores por defecto del formulario |
 | GET | `/health` | Estado del servicio y número de fracciones cargadas |
 
-`PATCH /operations/{id}/extraction` no aparece en la tabla del PRD, pero RF-04
-pide que el usuario pueda corregir el nombre y la función antes de clasificar, y
-esa corrección tiene que persistirse en algún lado.
+Dos endpoints no aparecen en la tabla del PRD:
+`PATCH /operations/{id}/extraction`, porque RF-04 pide que el usuario corrija el
+nombre y la función antes de clasificar y esa corrección tiene que persistirse; y
+`GET /config`, para que el umbral de revisión y los valores por defecto del
+formulario vivan en `.env` en lugar de estar repetidos en el código del
+frontend.
 
 Todos los endpoints salvo `/auth/login` y `/health` exigen la cabecera
 `Authorization: Bearer <token>`; sin ella responden **401**.

@@ -77,6 +77,8 @@ Prioridad: **P0** = indispensable para el flujo; **P1** = necesario para que la 
 
 **Aceptación:** con las fotos demo se obtiene JSON válido en ≥ 9 de 10 intentos; el error de Claude se muestra al usuario sin romper la UI.
 
+> **Medido.** La salida estructurada del SDK (`messages.parse` con un modelo Pydantic como `output_format`) hace que un JSON malformado deje de ser un modo de falla: 18 de 18 extracciones válidas.
+
 ### RF-05 Clasificación arancelaria (P0)
 
 - Endpoint `POST /operations/{id}/classify`.
@@ -96,7 +98,9 @@ Prioridad: **P0** = indispensable para el flujo; **P1** = necesario para que la 
 - La fracción elegida debe pertenecer a la lista de candidatos; si no, se reintenta una vez y luego se marca error.
 - Persiste `candidatos`, `clasificacion`, `status = "clasificada"`.
 
-**Aceptación:** para los 9 productos demo devuelve una fracción de la partida esperada; el smartwatch devuelve `confianza < 0.6`.
+**Aceptación:** para los 9 productos demo devuelve una fracción de la partida esperada, y al menos un producto devuelve `confianza < 0.6` para ejercitar la revisión manual.
+
+> **Medido.** 8 de 8 productos con partida asignable cayeron en la esperada, en dos corridas independientes. Los que disparan revisión son la **bocina** (0.55–0.57: la foto no permite distinguir un altavoz de varios en la misma caja) y el **cargador USB** (0.58–0.62: convertidor estático contra toma de corriente). El smartwatch, que este documento anticipaba como el caso ambiguo, clasifica con seguridad en 8517.62 (0.72–0.83) citando la Nota 1 f) del Capítulo 91; 9102.12.01 queda como primera alternativa. Ver la sección «Casos ambiguos» de `vision.md`.
 
 ### RF-06 Revisión y confirmación (P0)
 
@@ -221,7 +225,7 @@ total        = IGI + DTA + IVA
 
 ## 6. Requerimientos no funcionales
 
-- **Tiempo de respuesta:** extracción y clasificación < 20 s cada una; mostrar indicador de carga.
+- **Tiempo de respuesta:** extracción y clasificación < 20 s cada una; mostrar indicador de carga. *(Medido con `claude-opus-5`: extracción 7–10 s, clasificación 10–17 s con `CLAUDE_CLASSIFICATION_EFFORT=medium`. Con `high` la clasificación sube a 15–21 s y algunas llamadas rebasan el límite, sin cambiar la fracción elegida ni la confianza; por eso el valor por defecto es `medium`.)*
 - **Configuración:** todo por variables de entorno; sin secretos en el repo.
 - **Ejecución local:** `docker compose up` levanta api + mongo; `pnpm dev` levanta el frontend.
 - **Manejo de errores:** los fallos del LLM se registran en `operations.status = "error"` con mensaje, y la UI permite reintentar.
@@ -234,7 +238,7 @@ Regulaciones no arancelarias, tratados/preferencias, integración VUCEM o agente
 ## 8. Criterios de éxito del MVP
 
 1. El flujo completo se ejecuta sin intervención técnica en menos de 2 minutos por producto.
-2. Los 9 productos demo obtienen una fracción de la partida esperada y el smartwatch dispara revisión manual.
+2. Los 9 productos demo obtienen una fracción de la partida esperada y al menos uno dispara revisión manual. *(Cumplido: 8/8 partidas correctas; la bocina y el cargador disparan revisión. El caso ambiguo previsto —el smartwatch— resultó ser el seguro; ver `vision.md`.)*
 3. El pedimento PDF muestra fracción, NICO y liquidación consistentes con los datos capturados.
 4. Un tercero puede levantar el proyecto siguiendo el README.
 
@@ -245,4 +249,6 @@ Regulaciones no arancelarias, tratados/preferencias, integración VUCEM o agente
 | El Excel del SAT cambia de formato | Fallback a JSON mock de ~50 fracciones |
 | Claude devuelve una fracción fuera de candidatos | Validación + un reintento; luego estado error |
 | Fotos ambiguas producen extracciones pobres | Segunda foto de etiqueta/caja; edición manual de nombre y función |
+| El catálogo curado nombra el producto en la descripción y le regala la respuesta al modelo | Se detectó en la fracción del smartwatch y se corrigió: las descripciones del catálogo se mantienen genéricas, como en el texto oficial |
+| La confianza varía ±0.1 entre corridas con la misma entrada | Cerca del umbral un producto puede pedir revisión en una corrida y no en la siguiente; la UI trata la revisión como estado de la operación, no como resultado de una sola llamada |
 | WeasyPrint difícil de instalar en Docker | Imagen base con dependencias del sistema; alternativa `reportlab` |

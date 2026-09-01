@@ -1,31 +1,58 @@
 /**
- * The operation flow: upload, extract, review the features, classify.
+ * The whole operation flow on one page: upload, extract, review, capture,
+ * generate.
  *
- * The whole flow lives on one page rather than across routes: the user is
- * meant to see the photograph, the features Claude read from it, and the
- * proposed tariff code at the same time, because judging the proposal means
- * comparing it against the evidence.
+ * One page rather than four routes, because judging the proposal means
+ * comparing it against the evidence: the photograph, the features Claude read
+ * from it, and the code it chose all have to be visible at once.
  */
 
 import { useCallback, useEffect, useState } from 'react'
 
 import { ApiError } from '@/api/client'
 import { operationsApi } from '@/api/endpoints'
-import { ClassificationPanel } from '@/components/ClassificationPanel'
+import { ClassificationReview } from '@/components/ClassificationReview'
 import { ErrorNotice } from '@/components/ErrorNotice'
 import { ExtractionCard } from '@/components/ExtractionCard'
+import { OperationDetailsForm } from '@/components/OperationDetailsForm'
+import { PedimentoPanel } from '@/components/PedimentoPanel'
 import { PhotoUpload } from '@/components/PhotoUpload'
+import { SettlementPanel } from '@/components/SettlementPanel'
 import { StepTrail } from '@/components/StepTrail'
-import type { Operation } from '@/types/api'
+import { useAppConfig } from '@/hooks/useAppConfig'
+import type { Operation, OperationDetails } from '@/types/api'
 
-/** Which long-running call is in flight, so only its button shows a spinner. */
-type PendingAction = 'upload' | 'extract' | 'save' | 'classify' | null
+/** Which long-running call is in flight, so only its control shows progress. */
+type PendingAction =
+  | 'upload'
+  | 'extract'
+  | 'save'
+  | 'classify'
+  | 'confirm'
+  | 'details'
+  | 'pedimento'
+  | null
 
 function messageFor(error: unknown, fallback: string): string {
   return error instanceof ApiError ? error.message : fallback
 }
 
+/** The missing prerequisite for generating the pedimento, if any. */
+function pedimentoBlockedReason(operation: Operation): string | null {
+  if (!operation.classification) {
+    return 'Clasifica la mercancía antes de generar el pedimento.'
+  }
+  if (operation.classification.requires_review) {
+    return 'La confianza está por debajo del umbral: confirma una fracción para continuar.'
+  }
+  if (!operation.settlement) {
+    return 'Captura los datos de la operación para calcular las contribuciones.'
+  }
+  return null
+}
+
 export function NewOperationPage() {
+  const { config } = useAppConfig()
   const [operation, setOperation] = useState<Operation | null>(null)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [pending, setPending] = useState<PendingAction>(null)
@@ -63,23 +90,44 @@ export function NewOperationPage() {
     }
   }, [operation?.id])
 
-  const runExtraction = useCallback(async (operationId: string) => {
-    setPending('extract')
-    setError(null)
-    try {
-      setOperation(await operationsApi.extract(operationId))
-    } catch (caught) {
-      setError(messageFor(caught, 'No se pudo extraer las características.'))
-      // Reload so the persisted error status reaches the UI.
+  /** Runs a step, and on failure reloads so the persisted error status shows. */
+  const runStep = useCallback(
+    async (
+      action: Exclude<PendingAction, null>,
+      call: () => Promise<Operation>,
+      fallbackMessage: string,
+      operationId?: string,
+    ) => {
+      setPending(action)
+      setError(null)
       try {
-        setOperation(await operationsApi.get(operationId))
-      } catch {
-        // Keep the message already shown.
+        setOperation(await call())
+      } catch (caught) {
+        setError(messageFor(caught, fallbackMessage))
+        if (operationId) {
+          try {
+            setOperation(await operationsApi.get(operationId))
+          } catch {
+            // Keep the message already shown.
+          }
+        }
+      } finally {
+        setPending(null)
       }
-    } finally {
-      setPending(null)
-    }
-  }, [])
+    },
+    [],
+  )
+
+  const runExtraction = useCallback(
+    (operationId: string) =>
+      runStep(
+        'extract',
+        () => operationsApi.extract(operationId),
+        'No se pudo extraer las características.',
+        operationId,
+      ),
+    [runStep],
+  )
 
   async function handleUpload(file: File) {
     setPending('upload')
@@ -94,36 +142,41 @@ export function NewOperationPage() {
     }
   }
 
-  async function handleSaveExtraction(name: string, functionText: string) {
-    if (!operation) return
-    setPending('save')
-    setError(null)
-    try {
-      setOperation(await operationsApi.updateExtraction(operation.id, name, functionText))
-    } catch (caught) {
-      setError(messageFor(caught, 'No se pudieron guardar los cambios.'))
-    } finally {
-      setPending(null)
-    }
-  }
+  const handleSaveExtraction = (name: string, functionText: string) =>
+    runStep(
+      'save',
+      () => operationsApi.updateExtraction(operation!.id, name, functionText),
+      'No se pudieron guardar los cambios.',
+    )
 
-  async function handleClassify() {
-    if (!operation) return
-    setPending('classify')
-    setError(null)
-    try {
-      setOperation(await operationsApi.classify(operation.id))
-    } catch (caught) {
-      setError(messageFor(caught, 'No se pudo clasificar la mercancía.'))
-      try {
-        setOperation(await operationsApi.get(operation.id))
-      } catch {
-        // Keep the message already shown.
-      }
-    } finally {
-      setPending(null)
-    }
-  }
+  const handleClassify = () =>
+    runStep(
+      'classify',
+      () => operationsApi.classify(operation!.id),
+      'No se pudo clasificar la mercancía.',
+      operation?.id,
+    )
+
+  const handleConfirm = (tariffCode: string, nico: string) =>
+    runStep(
+      'confirm',
+      () => operationsApi.confirmClassification(operation!.id, tariffCode, nico),
+      'No se pudo confirmar la fracción.',
+    )
+
+  const handleSaveDetails = (details: OperationDetails) =>
+    runStep(
+      'details',
+      () => operationsApi.saveDetails(operation!.id, details),
+      'No se pudieron guardar los datos de la operación.',
+    )
+
+  const handleGeneratePedimento = () =>
+    runStep(
+      'pedimento',
+      () => operationsApi.generatePedimento(operation!.id),
+      'No se pudo generar el pedimento.',
+    )
 
   function startOver() {
     setOperation(null)
@@ -131,6 +184,12 @@ export function NewOperationPage() {
   }
 
   const isWorking = pending !== null
+  const igiRate =
+    operation?.classification
+      ? (operation.candidates.find(
+          (candidate) => candidate.tariff_code === operation.classification!.tariff_code,
+        )?.igi_rate ?? null)
+      : null
 
   return (
     <div className="space-y-8">
@@ -141,7 +200,7 @@ export function NewOperationPage() {
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
           Sube la fotografía del producto. Claude extrae sus características y
-          propone una fracción arancelaria entre las del catálogo TIGIE.
+          propone una fracción arancelaria; tú decides cuál se usa.
         </p>
       </header>
 
@@ -164,8 +223,8 @@ export function NewOperationPage() {
       {operation === null ? (
         <PhotoUpload onSubmit={handleUpload} isSubmitting={pending === 'upload'} />
       ) : (
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)] lg:items-start">
-          <aside className="space-y-3">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)] lg:items-start">
+          <aside className="space-y-3 lg:sticky lg:top-6">
             {imageUrl ? (
               <img
                 src={imageUrl}
@@ -182,7 +241,7 @@ export function NewOperationPage() {
             </button>
           </aside>
 
-          <div className="space-y-8">
+          <div className="space-y-10">
             {pending === 'extract' ? (
               <PendingPanel
                 title="Extrayendo características"
@@ -218,24 +277,34 @@ export function NewOperationPage() {
 
             {operation.classification ? (
               <>
-                <ClassificationPanel
+                <ClassificationReview
                   classification={operation.classification}
-                  threshold={operation.classification.confidence_threshold}
+                  candidates={operation.candidates}
+                  onConfirm={handleConfirm}
+                  isConfirming={pending === 'confirm'}
                 />
-                <div className="flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={handleClassify}
-                    disabled={isWorking}
-                  >
-                    Volver a clasificar
-                  </button>
-                  <span className="text-xs text-ink-faint">
-                    La revisión, los datos de la operación y el pedimento llegan en
-                    la siguiente entrega.
-                  </span>
-                </div>
+
+                {config ? (
+                  <OperationDetailsForm
+                    config={config}
+                    saved={operation.operation_details}
+                    onSubmit={handleSaveDetails}
+                    isSubmitting={pending === 'details'}
+                    disabled={operation.classification.requires_review}
+                  />
+                ) : null}
+
+                {operation.settlement ? (
+                  <SettlementPanel settlement={operation.settlement} igiRate={igiRate} />
+                ) : null}
+
+                <PedimentoPanel
+                  operationId={operation.id}
+                  hasPedimento={operation.has_pedimento}
+                  blockedReason={pedimentoBlockedReason(operation)}
+                  onGenerate={handleGeneratePedimento}
+                  isGenerating={pending === 'pedimento'}
+                />
               </>
             ) : null}
           </div>
@@ -248,11 +317,7 @@ export function NewOperationPage() {
 /** Placeholder shown while a Claude call is in flight. */
 function PendingPanel({ title, detail }: { title: string; detail: string }) {
   return (
-    <div
-      className="border border-rule bg-white px-4 py-4"
-      role="status"
-      aria-live="polite"
-    >
+    <div className="border border-rule bg-white px-4 py-4" role="status" aria-live="polite">
       <div className="flex items-center gap-3">
         <span className="flex gap-1" aria-hidden="true">
           {[0, 1, 2].map((index) => (

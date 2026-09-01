@@ -72,8 +72,52 @@ export interface Classification {
   rationale: string
   alternatives: ClassificationAlternative[]
   confirmed_by_user: boolean
+  original_tariff_code: string | null
+  was_overridden: boolean
   requires_review: boolean
   confidence_threshold: number
+}
+
+export interface Importer {
+  rfc: string
+  legal_name: string
+}
+
+export interface Supplier {
+  name: string
+  country: string
+}
+
+export interface OperationDetails {
+  invoice_value_usd: number
+  quantity: number
+  origin_country: string
+  exchange_rate: number
+  importer: Importer
+  supplier: Supplier
+}
+
+export interface Settlement {
+  customs_value: number
+  igi_amount: number
+  dta_amount: number
+  iva_amount: number
+  total: number
+}
+
+export interface OperationDefaults {
+  exchange_rate: number
+  origin_country: string
+  importer_rfc: string
+  importer_legal_name: string
+  supplier_name: string
+  supplier_country: string
+}
+
+export interface AppConfig {
+  confidence_threshold: number
+  max_upload_bytes: number
+  defaults: OperationDefaults
 }
 
 export interface Operation {
@@ -83,6 +127,8 @@ export interface Operation {
   extraction: Extraction | null
   candidates: TariffItem[]
   classification: Classification | null
+  operation_details: OperationDetails | null
+  settlement: Settlement | null
   error_message: string | null
   has_pedimento: boolean
   created_at: string

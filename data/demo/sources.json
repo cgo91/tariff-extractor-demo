@@ -1,0 +1,86 @@
+{
+  "note": "Fotografías de demostración descargadas de Wikimedia Commons. Cada archivo conserva la licencia y la autoría indicadas aquí. Reemplázalas por fotos propias cuando quieras: basta con mantener los mismos nombres de archivo.",
+  "images": [
+    {
+      "file": "audifonos.jpg",
+      "expected_subheading": "8518.30",
+      "source": "Wikimedia Commons",
+      "title": "File:Abandoned headphones (Unsplash).jpg",
+      "license": "CC0",
+      "author": "Antonis Spiridakis urbansurvivor",
+      "page": "https://commons.wikimedia.org/wiki/File%3AAbandoned_headphones_%28Unsplash%29.jpg"
+    },
+    {
+      "file": "bocina.jpg",
+      "expected_subheading": "8518.21 / 8518.22",
+      "source": "Wikimedia Commons",
+      "title": "File:Beats By Dr. Dre Pill Portable Bluetooth Speaker Black N2.jpg",
+      "license": "CC0",
+      "author": "Beats",
+      "page": "https://commons.wikimedia.org/wiki/File%3ABeats_By_Dr._Dre_Pill_Portable_Bluetooth_Speaker_Black_N2.jpg"
+    },
+    {
+      "file": "cable_usb.jpg",
+      "expected_subheading": "8544.42",
+      "source": "Wikimedia Commons",
+      "title": "File:Apple usb extension cable.JPG",
+      "license": "CC BY-SA 3.0",
+      "author": "Massimo Barbieri",
+      "page": "https://commons.wikimedia.org/wiki/File%3AApple_usb_extension_cable.JPG"
+    },
+    {
+      "file": "cargador_usb.jpg",
+      "expected_subheading": "8504.40",
+      "source": "Wikimedia Commons",
+      "title": "File:From the QM5 td (2022-09-12) 001 - USB Charger.jpg",
+      "license": "CC BY-SA 4.0",
+      "author": "Tdorante10",
+      "page": "https://commons.wikimedia.org/wiki/File%3AFrom_the_QM5_td_%282022-09-12%29_001_-_USB_Charger.jpg"
+    },
+    {
+      "file": "mouse.jpg",
+      "expected_subheading": "8471.60",
+      "source": "Wikimedia Commons",
+      "title": "File:A black wireless computer mouse.jpg",
+      "license": "CC BY-SA 4.0",
+      "author": "Pixloom",
+      "page": "https://commons.wikimedia.org/wiki/File%3AA_black_wireless_computer_mouse.jpg"
+    },
+    {
+      "file": "power_bank.jpg",
+      "expected_subheading": "8507.60",
+      "source": "Wikimedia Commons",
+      "title": "File:Power bank.JPG",
+      "license": "CC BY-SA 3.0",
+      "author": "Ilya Plekhanov",
+      "page": "https://commons.wikimedia.org/wiki/File%3APower_bank.JPG"
+    },
+    {
+      "file": "router.jpg",
+      "expected_subheading": "8517.62",
+      "source": "Wikimedia Commons",
+      "title": "File:ASUS Wi-Fi ROUTER TUF 6500.jpg",
+      "license": "CC BY-SA 4.0",
+      "author": "Dinkun Chen",
+      "page": "https://commons.wikimedia.org/wiki/File%3AASUS_Wi-Fi_ROUTER_TUF_6500.jpg"
+    },
+    {
+      "file": "smartphone.jpg",
+      "expected_subheading": "8517.13",
+      "source": "Wikimedia Commons",
+      "title": "File:A comparison between a smartphone and a tablet-PC.jpg",
+      "license": "CC BY-SA 4.0",
+      "author": "Cookie Nguyen",
+      "page": "https://commons.wikimedia.org/wiki/File%3AA_comparison_between_a_smartphone_and_a_tablet-PC.jpg"
+    },
+    {
+      "file": "smartwatch.jpg",
+      "expected_subheading": "8517.62 vs 9102.12 (caso ambiguo)",
+      "source": "Wikimedia Commons",
+      "title": "File:Android Wear Smartwatch- LG G Watch (15051419582).jpg",
+      "license": "CC BY 2.0",
+      "author": "Maurizio Pesce from Milan, Italia",
+      "page": "https://commons.wikimedia.org/wiki/File%3AAndroid_Wear_Smartwatch-_LG_G_Watch_%2815051419582%29.jpg"
+    }
+  ]
+}

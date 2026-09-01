@@ -25,10 +25,15 @@ from app.repositories.memory import (
 from app.services.auth_service import AuthService
 from app.services.catalog_service import CatalogService
 from app.services.classification_service import ClassificationService
+from app.services.details_service import OperationDetailsService
+from app.services.duty_calculator import DutyCalculator
 from app.services.extraction_service import ExtractionService
 from app.services.image_processing import ImageProcessor
 from app.services.operation_service import OperationService
+from app.services.pedimento_service import PedimentoService
+from app.services.review_service import ClassificationReviewService
 from tests.doubles import (
+    CapturingPdfRenderer,
     InMemoryFileStorage,
     StubTariffClassifier,
     StubVisionExtractor,
@@ -189,4 +194,46 @@ def classification_service(
 ) -> ClassificationService:
     return ClassificationService(
         operation_repository, catalog_service, tariff_classifier, CONFIDENCE_THRESHOLD
+    )
+
+
+# --- Phase 3 fixtures: review, settlement and pedimento ---------------------
+
+
+@pytest.fixture
+def review_service(
+    operation_repository: InMemoryOperationRepository,
+    catalog_service: CatalogService,
+) -> ClassificationReviewService:
+    return ClassificationReviewService(operation_repository, catalog_service)
+
+
+@pytest.fixture
+def details_service(
+    operation_repository: InMemoryOperationRepository,
+    catalog_service: CatalogService,
+) -> OperationDetailsService:
+    return OperationDetailsService(
+        operation_repository, catalog_service, DutyCalculator()
+    )
+
+
+@pytest.fixture
+def pdf_renderer() -> CapturingPdfRenderer:
+    return CapturingPdfRenderer()
+
+
+@pytest.fixture
+def pedimento_service(
+    operation_repository: InMemoryOperationRepository,
+    catalog_service: CatalogService,
+    file_storage: InMemoryFileStorage,
+    pdf_renderer: CapturingPdfRenderer,
+) -> PedimentoService:
+    return PedimentoService(
+        operation_repository,
+        catalog_service,
+        file_storage,
+        pdf_renderer,
+        CONFIDENCE_THRESHOLD,
     )

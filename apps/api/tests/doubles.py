@@ -15,6 +15,7 @@ from app.domain.models import (
     TariffItem,
 )
 from app.integrations.llm.base import TariffClassifier, VisionExtractor
+from app.services.pdf.base import PdfRenderer
 from app.services.storage.base import FileStorage
 
 
@@ -117,3 +118,18 @@ class InMemoryFileStorage(FileStorage):
 
     def exists(self, path: str) -> bool:
         return path in self.files
+
+
+class CapturingPdfRenderer(PdfRenderer):
+    """Records the HTML it is given and returns a stand-in PDF.
+
+    Lets the pedimento tests assert on the composed document without paying for
+    a real WeasyPrint render, which needs system libraries.
+    """
+
+    def __init__(self) -> None:
+        self.rendered_html: str | None = None
+
+    def render(self, html: str, base_url: str | None = None) -> bytes:
+        self.rendered_html = html
+        return b"%PDF-1.7 fake"

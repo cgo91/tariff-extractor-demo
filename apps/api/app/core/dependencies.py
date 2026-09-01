@@ -30,9 +30,15 @@ from app.repositories.mongo import (
 from app.services.auth_service import AuthService
 from app.services.catalog_service import CatalogService
 from app.services.classification_service import ClassificationService
+from app.services.details_service import OperationDetailsService
+from app.services.duty_calculator import DutyCalculator
 from app.services.extraction_service import ExtractionService
 from app.services.image_processing import ImageProcessor
 from app.services.operation_service import OperationService
+from app.services.pdf.base import PdfRenderer
+from app.services.pdf.weasyprint_renderer import WeasyPrintRenderer
+from app.services.pedimento_service import PedimentoService
+from app.services.review_service import ClassificationReviewService
 from app.services.storage.base import FileStorage
 from app.services.storage.local_storage import LocalFileStorage
 
@@ -102,6 +108,14 @@ def get_file_storage(settings: SettingsDep) -> FileStorage:
 
 def get_image_processor(settings: SettingsDep) -> ImageProcessor:
     return ImageProcessor(settings.max_upload_bytes)
+
+
+def get_duty_calculator() -> DutyCalculator:
+    return DutyCalculator()
+
+
+def get_pdf_renderer() -> PdfRenderer:
+    return WeasyPrintRenderer()
 
 
 def get_vision_extractor(
@@ -174,6 +188,37 @@ def get_classification_service(
     )
 
 
+def get_review_service(
+    operation_repository: Annotated[OperationRepository, Depends(get_operation_repository)],
+    catalog_service: Annotated[CatalogService, Depends(get_catalog_service)],
+) -> ClassificationReviewService:
+    return ClassificationReviewService(operation_repository, catalog_service)
+
+
+def get_details_service(
+    operation_repository: Annotated[OperationRepository, Depends(get_operation_repository)],
+    catalog_service: Annotated[CatalogService, Depends(get_catalog_service)],
+    duty_calculator: Annotated[DutyCalculator, Depends(get_duty_calculator)],
+) -> OperationDetailsService:
+    return OperationDetailsService(operation_repository, catalog_service, duty_calculator)
+
+
+def get_pedimento_service(
+    operation_repository: Annotated[OperationRepository, Depends(get_operation_repository)],
+    catalog_service: Annotated[CatalogService, Depends(get_catalog_service)],
+    file_storage: Annotated[FileStorage, Depends(get_file_storage)],
+    pdf_renderer: Annotated[PdfRenderer, Depends(get_pdf_renderer)],
+    settings: SettingsDep,
+) -> PedimentoService:
+    return PedimentoService(
+        operation_repository,
+        catalog_service,
+        file_storage,
+        pdf_renderer,
+        settings.confidence_threshold,
+    )
+
+
 # --- Security --------------------------------------------------------------
 
 
@@ -198,3 +243,6 @@ ExtractionServiceDep = Annotated[ExtractionService, Depends(get_extraction_servi
 ClassificationServiceDep = Annotated[
     ClassificationService, Depends(get_classification_service)
 ]
+ReviewServiceDep = Annotated[ClassificationReviewService, Depends(get_review_service)]
+DetailsServiceDep = Annotated[OperationDetailsService, Depends(get_details_service)]
+PedimentoServiceDep = Annotated[PedimentoService, Depends(get_pedimento_service)]

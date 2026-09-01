@@ -33,7 +33,8 @@ Todo lo que no es descargable se **simula** con datos mock en MongoDB.
 Razones:
 - Los productos se pueden fotografiar en casa.
 - Las fracciones están bien diferenciadas y tienen NICO reales.
-- Existe un caso ambiguo natural (smartwatch) para demostrar la revisión humana.
+- Hay casos genuinamente ambiguos que obligan a la revisión humana (ver más
+  abajo: se anticipó el smartwatch y resultaron ser la bocina y el cargador).
 
 ### Productos demo
 
@@ -42,14 +43,42 @@ Subpartida SA de 6 dígitos como referencia; la fracción de 8 dígitos y el NIC
 | Producto | Subpartida SA | Nota |
 |---|---|---|
 | Audífonos bluetooth | 8518.30 | |
-| Bocina bluetooth | 8518.21 / 8518.22 | |
-| Cargador USB de pared | 8504.40 | |
+| Bocina bluetooth | 8518.21 / 8518.22 | **Caso ambiguo confirmado**: un altavoz contra varios en la misma caja |
+| Cargador USB de pared | 8504.40 | **Caso ambiguo confirmado**: convertidor estático contra toma de corriente (85.36) |
 | Cable USB con conectores | 8544.42 | |
 | Mouse / teclado | 8471.60 | |
 | Power bank | 8507.60 | |
 | Smartphone | 8517.13 | |
 | Router | 8517.62 | |
-| Smartwatch | 8517.62 vs cap. 91 | Caso ambiguo: confianza baja, revisión manual |
+| Smartwatch | 8517.62 | Se anticipó ambiguo; resultó ser el caso seguro |
+
+### Casos ambiguos: lo previsto y lo medido
+
+Este documento anticipaba el **smartwatch** como el caso que dispararía la
+revisión humana, por la competencia entre la partida 85.17 y el capítulo 91.
+La medición contra el sistema construido dice otra cosa.
+
+El smartwatch clasifica **con seguridad** en 8517.62 (confianza 0.72–0.83 en
+todas las corridas), citando la Nota 1 f) del Capítulo 91, que excluye de ese
+capítulo los aparatos que, aunque indiquen la hora, son aparatos de
+telecomunicación. El argumento es correcto: el tratamiento de los relojes con
+conectividad está más asentado de lo que este documento suponía. La fracción
+9102.12.01 aparece como primera alternativa en todas las corridas, así que la
+competencia se muestra, pero no está reñida.
+
+Los casos que sí obligan a revisión aparecieron solos, y son mejores porque la
+ambigüedad es visual y no jurídica:
+
+- **Bocina bluetooth** (confianza 0.55–0.57, reproducible): la fotografía no
+  permite saber si la caja lleva un solo altavoz —8518.21— o varios —8518.22—.
+  El modelo alterna entre ambas entre corridas.
+- **Cargador USB** (confianza 0.58–0.62): la fotografía es un módulo empotrable
+  de doble puerto USB, y el modelo razona explícitamente entre la partida 85.04
+  como convertidor estático y la 85.36 como toma de corriente.
+
+La confianza varía ±0.1 entre corridas con la misma entrada, así que cerca del
+umbral de 0.6 un producto puede pedir revisión en una corrida y no en la
+siguiente. Es una propiedad del modelo, no un defecto del sistema.
 
 ### Cómo obtener las imágenes
 
@@ -178,6 +207,9 @@ total        = IGI + DTA + IVA
 
 - Seed con **datos reales del SAT/SNICE**, no inventados.
 - Salida **estructurada y validada** de Claude (JSON garantizado).
-- **Confianza + revisión humana**: el sistema propone, la persona decide.
+- **Confianza + revisión humana**: el sistema propone, la persona decide. Y la
+  ambigüedad no está guionada: la bocina y el cargador caen bajo el umbral por
+  sí solos, y el expediente conserva qué propuso el modelo y qué decidió la
+  persona.
 - Pedimento con **cálculos correctos** aunque el layout sea aproximado.
 - Alcance y disclaimer claramente documentados.
