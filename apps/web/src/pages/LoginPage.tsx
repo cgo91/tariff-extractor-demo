@@ -1,9 +1,11 @@
 /**
  * Sign-in screen (RF-01).
  *
- * The left panel is the thesis of the whole product: a photograph becomes a
- * tariff code becomes a pedimento. It is drawn with the same field boxes the
- * rest of the app uses, so the promise and the interface are the same object.
+ * A single centred column on paper. The form is drawn as one block of the
+ * document the app produces: the two boxes share an edge instead of floating
+ * apart, the way adjacent boxes do on the Anexo 22 grid. That shared hairline
+ * is the only ornament on the page — a login authenticates, it does not pitch
+ * the product, so the promise is one line of text rather than a panel.
  */
 
 import { useState, type FormEvent } from 'react'
@@ -12,14 +14,6 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { ApiError } from '@/api/client'
 import { useAuth } from '@/auth/AuthContext'
 import { FieldInput } from '@/components/Field'
-
-/** The four states an operation moves through, shown as the product promise. */
-const PIPELINE = [
-  { label: 'Fotografía', value: 'JPG · 10 MB' },
-  { label: 'Extracción', value: 'Claude vision' },
-  { label: 'Fracción · NICO', value: '8518.30.01 · 00' },
-  { label: 'Pedimento', value: 'PDF · Anexo 22' },
-]
 
 export function LoginPage() {
   const { isAuthenticated, isRestoring, signIn } = useAuth()
@@ -56,90 +50,73 @@ export function LoginPage() {
   }
 
   return (
-    <main className="grid min-h-screen lg:grid-cols-[1.15fr_1fr]">
-      {/* Left: the product thesis, drawn in the app's own vocabulary. */}
-      <section className="relative flex flex-col justify-between bg-ink px-8 py-10 text-paper lg:px-14 lg:py-14">
-        <p className="eyebrow text-paper/55">
-          Sistema de apoyo a la clasificación arancelaria
-        </p>
-
-        <div className="my-12 max-w-xl lg:my-0">
-          <h1 className="text-4xl leading-[1.08] font-semibold tracking-tight text-balance lg:text-5xl">
-            De una fotografía del producto
-            <br />
-            <span className="text-paper/55">a la fracción, el NICO</span>
-            <br />y el pedimento.
-          </h1>
-
-          <div className="mt-10 grid grid-cols-2 gap-px border border-paper/15 bg-paper/15 sm:grid-cols-4">
-            {PIPELINE.map((step) => (
-              <div key={step.label} className="bg-ink px-3 py-3">
-                <span className="field-label text-paper/45">{step.label}</span>
-                <span className="mt-0.5 block font-mono text-xs text-paper/85 tabular-nums">
-                  {step.value}
-                </span>
-              </div>
-            ))}
-          </div>
+    <main className="flex min-h-screen flex-col items-center justify-center px-6 py-12">
+      <div className="w-full max-w-sm">
+        {/* The same mark the authenticated header carries. */}
+        <div className="flex items-baseline gap-3 border-b border-rule pb-3">
+          <span className="font-mono text-sm font-semibold tracking-tight">
+            8518.30.01
+          </span>
+          <span className="eyebrow">Clasificación arancelaria</span>
         </div>
 
-        <p className="max-w-md text-xs leading-relaxed text-paper/45">
-          La clasificación es una propuesta asistida. La determinación final de la
-          fracción y el NICO es responsabilidad del agente aduanal. Documento
-          simulado con fines de demostración.
+        <h1 className="mt-8 text-2xl font-semibold tracking-tight">Inicia sesión</h1>
+        <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+          De una fotografía del producto a la fracción, el NICO y el pedimento.
         </p>
-      </section>
 
-      {/* Right: the form. */}
-      <section className="flex items-center justify-center px-6 py-16 lg:px-14">
-        <div className="w-full max-w-sm">
-          <p className="eyebrow">Acceso</p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight">Inicia sesión</h2>
-          <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+        <form onSubmit={handleSubmit} className="mt-8" noValidate>
+          {/* Adjacent boxes collapse their shared rule, as on the pedimento. */}
+          <FieldInput
+            label="Correo electrónico"
+            type="email"
+            name="email"
+            autoComplete="username"
+            required
+            value={email}
+            placeholder="demo@aduana.mx"
+            onChange={(event) => setEmail(event.target.value)}
+            className="relative focus-within:z-10"
+          />
+          <FieldInput
+            label="Contraseña"
+            type="password"
+            name="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            placeholder="••••••••"
+            onChange={(event) => setPassword(event.target.value)}
+            className="relative -mt-px focus-within:z-10"
+          />
+
+          {error ? (
+            <div
+              role="alert"
+              className="mt-3 border border-accent/35 bg-accent-wash px-3 py-2.5 text-sm text-accent-sunk"
+            >
+              {error}
+            </div>
+          ) : null}
+
+          <button
+            type="submit"
+            className="btn btn-primary mt-4 w-full"
+            disabled={isSubmitting || email.length === 0 || password.length === 0}
+          >
+            {isSubmitting ? 'Verificando…' : 'Entrar'}
+          </button>
+
+          <p className="mt-3 text-xs leading-relaxed text-ink-soft">
             Usa la cuenta creada por el script de carga inicial.
           </p>
+        </form>
 
-          <form onSubmit={handleSubmit} className="mt-8 space-y-3" noValidate>
-            <FieldInput
-              label="Correo electrónico"
-              type="email"
-              name="email"
-              autoComplete="username"
-              required
-              value={email}
-              placeholder="demo@aduana.mx"
-              onChange={(event) => setEmail(event.target.value)}
-            />
-            <FieldInput
-              label="Contraseña"
-              type="password"
-              name="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              placeholder="••••••••"
-              onChange={(event) => setPassword(event.target.value)}
-            />
-
-            {error ? (
-              <div
-                role="alert"
-                className="border border-accent/35 bg-accent-wash px-3 py-2.5 text-sm text-accent-sunk"
-              >
-                {error}
-              </div>
-            ) : null}
-
-            <button
-              type="submit"
-              className="btn btn-primary w-full"
-              disabled={isSubmitting || email.length === 0 || password.length === 0}
-            >
-              {isSubmitting ? 'Verificando…' : 'Entrar'}
-            </button>
-          </form>
-        </div>
-      </section>
+        <p className="mt-10 border-t border-rule pt-4 text-xs leading-relaxed text-ink-faint">
+          Documento simulado con fines de demostración. La determinación final de
+          la fracción arancelaria y el NICO es responsabilidad del agente aduanal.
+        </p>
+      </div>
     </main>
   )
 }
