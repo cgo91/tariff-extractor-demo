@@ -63,7 +63,8 @@ export function OperationWorkspace({ flow, config, sidebarAction }: OperationWor
       ) : null}
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)] lg:items-start">
-        <aside className="space-y-3 lg:sticky lg:top-6">
+        {/* Parks below the pinned step trail rather than under it. */}
+        <aside className="space-y-3 lg:sticky lg:top-24">
           {imageUrl ? (
             <img
               src={imageUrl}

@@ -39,7 +39,7 @@ export function FieldInput({ label, error, className = '', ...inputProps }: Fiel
 
   return (
     <div className={className}>
-      <div className="field">
+      <div className="field field-editable">
         <label className="field-label" htmlFor={id}>
           {label}
         </label>

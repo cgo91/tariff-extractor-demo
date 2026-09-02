@@ -68,7 +68,7 @@ export function CatalogSearch({ onSelect, selectedCode }: CatalogSearchProps) {
 
   return (
     <section>
-      <div className="field">
+      <div className="field field-editable">
         <label className="field-label" htmlFor="catalog-query">
           Buscar en el catálogo TIGIE
         </label>

@@ -28,9 +28,9 @@ function editabilityFor(status: OperationStatus): { canEdit: boolean; note: stri
     return { canEdit: false, note: 'Solo lectura · pedimento generado' }
   }
   if (status === 'classified') {
-    return { canEdit: true, note: 'Editable · vuelve a clasificar si lo cambias' }
+    return { canEdit: true, note: 'Nombre y función editables · vuelve a clasificar' }
   }
-  return { canEdit: true, note: 'Editable antes de clasificar' }
+  return { canEdit: true, note: 'Nombre y función editables antes de clasificar' }
 }
 
 export function ExtractionCard({

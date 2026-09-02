@@ -13,6 +13,7 @@
   --color-ink: #16211d;
   --color-ink-soft: #55605b;
   --color-ink-faint: #8b948f;
+  --color-rule-soft: #e6e9e4;
   --color-rule: #d5d9d3;
   --color-rule-strong: #b3bab5;
 
@@ -64,11 +65,21 @@
   /*
     The signature element. A pedimento field: hairline box, corner label in
     small caps, monospaced value. Reused for read-only data and for inputs.
+
+    The border carries the affordance. A printed box the user only reads gets
+    the faintest rule; add `.field-editable` and the rule darkens, which is the
+    only cue distinguishing a box you type into from one you cannot — they are
+    otherwise identical, and a card mixing both (the extraction review) was
+    read as a form with most of its inputs disabled.
   */
   .field {
-    border: 1px solid var(--color-rule);
+    border: 1px solid var(--color-rule-soft);
     background-color: #ffffff;
     padding: 0.5rem 0.75rem 0.625rem;
+  }
+
+  .field-editable {
+    border-color: var(--color-rule-strong);
   }
 
   .field-label {
