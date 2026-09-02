@@ -81,6 +81,16 @@
     line-height: 1.2;
   }
 
+  /*
+    Most labels are spans, which need `display: block` to claim their own line.
+    A `th` does not: overriding its `table-cell` display makes the browser wrap
+    the whole header row into one anonymous cell, and the labels stack on top of
+    each other instead of sitting over their columns.
+  */
+  th.field-label {
+    display: table-cell;
+  }
+
   .field-value {
     font-family: var(--font-mono);
     font-size: 0.875rem;

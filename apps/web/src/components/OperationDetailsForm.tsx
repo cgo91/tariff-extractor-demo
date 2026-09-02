@@ -17,7 +17,8 @@ interface OperationDetailsFormProps {
   saved: OperationDetails | null
   onSubmit: (details: OperationDetails) => Promise<void>
   isSubmitting: boolean
-  disabled: boolean
+  /** Why the form is locked, shown under it; null means it accepts input. */
+  disabledReason: string | null
 }
 
 interface FormState {
@@ -99,8 +100,9 @@ export function OperationDetailsForm({
   saved,
   onSubmit,
   isSubmitting,
-  disabled,
+  disabledReason,
 }: OperationDetailsFormProps) {
+  const disabled = disabledReason !== null
   const [state, setState] = useState<FormState>(() => initialState(config, saved))
   const [showErrors, setShowErrors] = useState(false)
 
@@ -144,7 +146,9 @@ export function OperationDetailsForm({
     <section>
       <h2 className="text-lg font-semibold tracking-tight">Datos de la operación</h2>
       <p className="mt-1 text-sm text-ink-soft">
-        Precargados con los valores de la demo. Ajusta lo que necesites.
+        {saved
+          ? 'Los valores con los que se calcularon las contribuciones.'
+          : 'Precargados con los valores de la demo. Ajusta lo que necesites.'}
       </p>
 
       <form onSubmit={handleSubmit} noValidate className="mt-4">
@@ -227,10 +231,8 @@ export function OperationDetailsForm({
         </fieldset>
       </form>
 
-      {disabled ? (
-        <p className="mt-3 text-xs text-ink-faint">
-          Confirma la fracción arancelaria para capturar los datos de la operación.
-        </p>
+      {disabledReason ? (
+        <p className="mt-3 text-xs text-ink-faint">{disabledReason}</p>
       ) : null}
     </section>
   )

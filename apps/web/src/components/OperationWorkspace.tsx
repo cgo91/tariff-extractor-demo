@@ -50,6 +50,10 @@ export function OperationWorkspace({ flow, config, sidebarAction }: OperationWor
   const { operation, imageUrl, pending, error, isWorking } = flow
   if (operation === null) return null
 
+  // Once the pedimento exists the API rejects every edit with a 409, so the
+  // panels show the record without offering controls that can only fail.
+  const isLocked = operation.status === 'pedimento_generated'
+
   return (
     <div className="space-y-8">
       <StepTrail status={operation.status} />
@@ -96,6 +100,7 @@ export function OperationWorkspace({ flow, config, sidebarAction }: OperationWor
           {operation.extraction ? (
             <ExtractionCard
               extraction={operation.extraction}
+              status={operation.status}
               onSave={flow.saveExtraction}
               isSaving={pending === 'save'}
             />
@@ -126,6 +131,7 @@ export function OperationWorkspace({ flow, config, sidebarAction }: OperationWor
                 candidates={operation.candidates}
                 onConfirm={flow.confirmClassification}
                 isConfirming={pending === 'confirm'}
+                isLocked={isLocked}
               />
 
               {config ? (
@@ -134,7 +140,13 @@ export function OperationWorkspace({ flow, config, sidebarAction }: OperationWor
                   saved={operation.operation_details}
                   onSubmit={flow.saveDetails}
                   isSubmitting={pending === 'details'}
-                  disabled={operation.classification.requires_review}
+                  disabledReason={
+                    isLocked
+                      ? 'El pedimento ya fue generado: los datos de la operación quedaron fijados.'
+                      : operation.classification.requires_review
+                        ? 'Confirma la fracción arancelaria para capturar los datos de la operación.'
+                        : null
+                  }
                 />
               ) : null}
 

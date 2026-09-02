@@ -5,6 +5,9 @@
  * that were considered and discarded — and three ways to act on it: accept it,
  * take one of the alternatives, or search the catalog for anything else.
  * Below the confidence threshold nothing moves forward until a person picks.
+ *
+ * Once the pedimento exists the API refuses to re-classify, so the evidence
+ * stays on screen but every control that would change the code disappears.
  */
 
 import { useState } from 'react'
@@ -19,6 +22,8 @@ interface ClassificationReviewProps {
   candidates: TariffItem[]
   onConfirm: (tariffCode: string, nico: string) => Promise<void>
   isConfirming: boolean
+  /** The pedimento already exists: the classification can no longer change. */
+  isLocked: boolean
 }
 
 function formatCode(tariffCode: string): string {
@@ -30,6 +35,7 @@ export function ClassificationReview({
   candidates,
   onConfirm,
   isConfirming,
+  isLocked,
 }: ClassificationReviewProps) {
   const [isSearching, setIsSearching] = useState(false)
 
@@ -92,25 +98,27 @@ export function ClassificationReview({
         </p>
       ) : null}
 
-      <div className="mt-5 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => onConfirm(classification.tariff_code, classification.nico)}
-          disabled={isConfirming}
-        >
-          {isConfirming ? 'Guardando…' : 'Confirmar esta fracción'}
-        </button>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={() => setIsSearching((open) => !open)}
-        >
-          {isSearching ? 'Cerrar buscador' : 'Elegir otra del catálogo'}
-        </button>
-      </div>
+      {isLocked ? null : (
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => onConfirm(classification.tariff_code, classification.nico)}
+            disabled={isConfirming}
+          >
+            {isConfirming ? 'Guardando…' : 'Confirmar esta fracción'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => setIsSearching((open) => !open)}
+          >
+            {isSearching ? 'Cerrar buscador' : 'Elegir otra del catálogo'}
+          </button>
+        </div>
+      )}
 
-      {isSearching ? (
+      {isSearching && !isLocked ? (
         <div className="mt-4 border border-rule bg-paper-sunk p-4">
           <CatalogSearch
             selectedCode={classification.tariff_code}
@@ -126,17 +134,14 @@ export function ClassificationReview({
         <div className="mt-8">
           <h3 className="eyebrow">Alternativas consideradas</h3>
           <p className="mt-1 mb-2 text-xs text-ink-faint">
-            Selecciona una para sustituir la propuesta.
+            {isLocked
+              ? 'Se descartaron durante la clasificación.'
+              : 'Selecciona una para sustituir la propuesta.'}
           </p>
           <ul className="divide-y divide-rule border border-rule bg-white">
-            {classification.alternatives.map((alternative) => (
-              <li key={`${alternative.tariff_code}-${alternative.nico}`}>
-                <button
-                  type="button"
-                  className="block w-full px-3 py-3 text-left transition-colors hover:bg-paper-sunk disabled:opacity-50"
-                  onClick={() => onConfirm(alternative.tariff_code, alternative.nico)}
-                  disabled={isConfirming}
-                >
+            {classification.alternatives.map((alternative) => {
+              const body = (
+                <>
                   <span className="font-mono text-sm font-semibold tabular-nums">
                     {alternative.formatted_code}
                     <span className="text-ink-faint"> · {alternative.nico}</span>
@@ -144,9 +149,25 @@ export function ClassificationReview({
                   <p className="mt-1 text-sm leading-snug text-ink-soft">
                     {alternative.reason}
                   </p>
-                </button>
-              </li>
-            ))}
+                </>
+              )
+              return (
+                <li key={`${alternative.tariff_code}-${alternative.nico}`}>
+                  {isLocked ? (
+                    <div className="px-3 py-3">{body}</div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="block w-full px-3 py-3 text-left transition-colors hover:bg-paper-sunk disabled:opacity-50"
+                      onClick={() => onConfirm(alternative.tariff_code, alternative.nico)}
+                      disabled={isConfirming}
+                    >
+                      {body}
+                    </button>
+                  )}
+                </li>
+              )
+            })}
           </ul>
         </div>
       ) : null}

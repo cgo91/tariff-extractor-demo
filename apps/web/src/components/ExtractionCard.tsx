@@ -4,20 +4,41 @@
  * Name and function are editable because they are what drives the candidate
  * search: a wrong name sends the classifier down the wrong heading, and the
  * cheapest fix is a human typing three words.
+ *
+ * Once the pedimento exists the aggregate is closed and the API rejects the
+ * edit with a 409, so the card turns read-only rather than offering a form
+ * whose save can only fail.
  */
 
 import { useEffect, useState } from 'react'
 
 import { Field, FieldInput } from '@/components/Field'
-import type { Extraction } from '@/types/api'
+import type { Extraction, OperationStatus } from '@/types/api'
 
 interface ExtractionCardProps {
   extraction: Extraction
+  status: OperationStatus
   onSave: (name: string, functionText: string) => Promise<void>
   isSaving: boolean
 }
 
-export function ExtractionCard({ extraction, onSave, isSaving }: ExtractionCardProps) {
+/** Mirrors `OperationService._reject_if_closed` on the API side. */
+function editabilityFor(status: OperationStatus): { canEdit: boolean; note: string } {
+  if (status === 'pedimento_generated') {
+    return { canEdit: false, note: 'Solo lectura · pedimento generado' }
+  }
+  if (status === 'classified') {
+    return { canEdit: true, note: 'Editable · vuelve a clasificar si lo cambias' }
+  }
+  return { canEdit: true, note: 'Editable antes de clasificar' }
+}
+
+export function ExtractionCard({
+  extraction,
+  status,
+  onSave,
+  isSaving,
+}: ExtractionCardProps) {
   const [name, setName] = useState(extraction.name)
   const [functionText, setFunctionText] = useState(extraction.function)
 
@@ -27,6 +48,7 @@ export function ExtractionCard({ extraction, onSave, isSaving }: ExtractionCardP
     setFunctionText(extraction.function)
   }, [extraction])
 
+  const { canEdit, note } = editabilityFor(status)
   const isDirty = name !== extraction.name || functionText !== extraction.function
   const isValid = name.trim().length >= 2 && functionText.trim().length >= 2
 
@@ -34,22 +56,35 @@ export function ExtractionCard({ extraction, onSave, isSaving }: ExtractionCardP
     <section>
       <div className="flex items-baseline justify-between gap-4">
         <h2 className="text-lg font-semibold tracking-tight">Características extraídas</h2>
-        <span className="eyebrow">Editable antes de clasificar</span>
+        <span className="eyebrow">{note}</span>
       </div>
 
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
-        <FieldInput
-          label="Nombre del producto"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          className="sm:col-span-2"
-        />
-        <FieldInput
-          label="Función"
-          value={functionText}
-          onChange={(event) => setFunctionText(event.target.value)}
-          className="sm:col-span-2"
-        />
+        {canEdit ? (
+          <>
+            <FieldInput
+              label="Nombre del producto"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              className="sm:col-span-2"
+            />
+            <FieldInput
+              label="Función"
+              value={functionText}
+              onChange={(event) => setFunctionText(event.target.value)}
+              className="sm:col-span-2"
+            />
+          </>
+        ) : (
+          <>
+            <Field label="Nombre del producto" className="sm:col-span-2">
+              {extraction.name}
+            </Field>
+            <Field label="Función" className="sm:col-span-2">
+              {extraction.function}
+            </Field>
+          </>
+        )}
 
         <Field label="Marca">{extraction.brand ?? '—'}</Field>
         <Field label="Modelo">{extraction.model ?? '—'}</Field>
@@ -73,7 +108,7 @@ export function ExtractionCard({ extraction, onSave, isSaving }: ExtractionCardP
         </Field>
       </div>
 
-      {isDirty ? (
+      {canEdit && isDirty ? (
         <div className="mt-3 flex items-center gap-3">
           <button
             type="button"
