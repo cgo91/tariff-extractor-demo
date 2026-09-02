@@ -1,11 +1,14 @@
 /**
  * Sign-in screen (RF-01).
  *
- * A single centred column on paper. The form is drawn as one block of the
- * document the app produces: the two boxes share an edge instead of floating
- * apart, the way adjacent boxes do on the Anexo 22 grid. That shared hairline
- * is the only ornament on the page — a login authenticates, it does not pitch
- * the product, so the promise is one line of text rather than a panel.
+ * A single centred card on a sunk ground. The card lifts off the page the way
+ * the design system asks for depth — a change of ground plus a hairline rule,
+ * never a drop shadow — and carries a ruled header, so it reads as a block of
+ * the document the app produces rather than a generic panel.
+ *
+ * A login authenticates; it does not pitch the product, so the promise is one
+ * line under the title and the legal notice sits outside the card, where fine
+ * print belongs.
  */
 
 import { useState, type FormEvent } from 'react'
@@ -50,69 +53,73 @@ export function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center px-6 py-12">
-      <div className="w-full max-w-sm">
-        {/* The same mark the authenticated header carries. */}
-        <div className="flex items-baseline gap-3 border-b border-rule pb-3">
-          <span className="font-mono text-sm font-semibold tracking-tight">
-            8518.30.01
-          </span>
-          <span className="eyebrow">Clasificación arancelaria</span>
+    <main className="flex min-h-screen flex-col items-center justify-center bg-paper-sunk px-6 py-12">
+      <div className="w-full max-w-md">
+        <div className="border border-rule bg-white">
+          {/* The same mark the authenticated header carries. */}
+          <div className="flex items-baseline gap-3 border-b border-rule px-7 py-4">
+            <span className="font-mono text-sm font-semibold tracking-tight">
+              8518.30.01
+            </span>
+            <span className="eyebrow">Clasificación arancelaria</span>
+          </div>
+
+          <div className="px-7 pt-7 pb-8">
+            <h1 className="text-2xl font-semibold tracking-tight">Inicia sesión</h1>
+            <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+              De una fotografía del producto a la fracción, el NICO y el pedimento.
+            </p>
+
+            <form onSubmit={handleSubmit} className="mt-7" noValidate>
+              {/* Adjacent boxes collapse their shared rule, as on the pedimento. */}
+              <FieldInput
+                label="Correo electrónico"
+                type="email"
+                name="email"
+                autoComplete="username"
+                required
+                value={email}
+                placeholder="demo@aduana.mx"
+                onChange={(event) => setEmail(event.target.value)}
+                className="relative focus-within:z-10"
+              />
+              <FieldInput
+                label="Contraseña"
+                type="password"
+                name="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                placeholder="••••••••"
+                onChange={(event) => setPassword(event.target.value)}
+                className="relative -mt-px focus-within:z-10"
+              />
+
+              {error ? (
+                <div
+                  role="alert"
+                  className="mt-3 border border-accent/35 bg-accent-wash px-3 py-2.5 text-sm text-accent-sunk"
+                >
+                  {error}
+                </div>
+              ) : null}
+
+              <button
+                type="submit"
+                className="btn btn-primary mt-4 w-full"
+                disabled={isSubmitting || email.length === 0 || password.length === 0}
+              >
+                {isSubmitting ? 'Verificando…' : 'Entrar'}
+              </button>
+
+              <p className="mt-3 text-xs leading-relaxed text-ink-soft">
+                Usa la cuenta creada por el script de carga inicial.
+              </p>
+            </form>
+          </div>
         </div>
 
-        <h1 className="mt-8 text-2xl font-semibold tracking-tight">Inicia sesión</h1>
-        <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-          De una fotografía del producto a la fracción, el NICO y el pedimento.
-        </p>
-
-        <form onSubmit={handleSubmit} className="mt-8" noValidate>
-          {/* Adjacent boxes collapse their shared rule, as on the pedimento. */}
-          <FieldInput
-            label="Correo electrónico"
-            type="email"
-            name="email"
-            autoComplete="username"
-            required
-            value={email}
-            placeholder="demo@aduana.mx"
-            onChange={(event) => setEmail(event.target.value)}
-            className="relative focus-within:z-10"
-          />
-          <FieldInput
-            label="Contraseña"
-            type="password"
-            name="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            placeholder="••••••••"
-            onChange={(event) => setPassword(event.target.value)}
-            className="relative -mt-px focus-within:z-10"
-          />
-
-          {error ? (
-            <div
-              role="alert"
-              className="mt-3 border border-accent/35 bg-accent-wash px-3 py-2.5 text-sm text-accent-sunk"
-            >
-              {error}
-            </div>
-          ) : null}
-
-          <button
-            type="submit"
-            className="btn btn-primary mt-4 w-full"
-            disabled={isSubmitting || email.length === 0 || password.length === 0}
-          >
-            {isSubmitting ? 'Verificando…' : 'Entrar'}
-          </button>
-
-          <p className="mt-3 text-xs leading-relaxed text-ink-soft">
-            Usa la cuenta creada por el script de carga inicial.
-          </p>
-        </form>
-
-        <p className="mt-10 border-t border-rule pt-4 text-xs leading-relaxed text-ink-faint">
+        <p className="mt-5 text-xs leading-relaxed text-ink-faint">
           Documento simulado con fines de demostración. La determinación final de
           la fracción arancelaria y el NICO es responsabilidad del agente aduanal.
         </p>
