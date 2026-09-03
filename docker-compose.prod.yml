@@ -57,8 +57,10 @@ services:
       - dokploy-network
     labels:
       - traefik.enable=true
+      # The domain is read from APP_DOMAIN so the same file works on every
+      # host; set it in Dokploy's Environment tab, never in the repository.
       # Router and service names must be unique across the whole Dokploy host.
-      - traefik.http.routers.tariff-web.rule=Host(`REPLACE_WITH_YOUR_DOMAIN`)
+      - traefik.http.routers.tariff-web.rule=Host(`${APP_DOMAIN}`)
       - traefik.http.routers.tariff-web.entrypoints=websecure
       - traefik.http.routers.tariff-web.tls.certResolver=letsencrypt
       - traefik.http.services.tariff-web.loadbalancer.server.port=80

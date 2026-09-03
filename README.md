@@ -151,26 +151,25 @@ valida por HTTP.
 En Dokploy: **Project -> Create Service -> Compose**, conecta el repositorio,
 rama `main`, y en *Compose Path* escribe `docker-compose.prod.yml`.
 
-### 3. Sustituir el dominio
-
-En `docker-compose.prod.yml`, cambia `REPLACE_WITH_YOUR_DOMAIN` por tu dominio.
-Los nombres de router y servicio de Traefik (`tariff-web`) deben ser únicos en
-todo el host de Dokploy.
-
-### 4. Variables de entorno
+### 3. Variables de entorno
 
 En la pestaña *Environment* pega el contenido de `.env.example` con los valores
-reales. Tres cambian respecto al entorno local:
+reales, más el dominio. Cuatro entradas cambian respecto al entorno local:
 
 ```
+APP_DOMAIN=tu-dominio.com
 JWT_SECRET=<cadena aleatoria de 32+ caracteres>
-SEED_USER_PASSWORD=<no dejes demo1234 en una URL publica>
+SEED_USER_PASSWORD=<no dejes demo1234 en una URL pública>
 CORS_ORIGINS=https://tu-dominio.com
 ```
 
-`MONGO_URI` lo fija el compose; lo que pongas aquí se ignora.
+`APP_DOMAIN` alimenta la regla de Traefik, así que el compose no lleva ningún
+dominio escrito y el mismo archivo sirve en cualquier host. `MONGO_URI` lo fija
+el compose; lo que pongas aquí se ignora. Los nombres de router y servicio de
+Traefik (`tariff-web`) sí están en el archivo, y deben ser únicos en todo el
+host de Dokploy.
 
-### 5. Desplegar y sembrar
+### 4. Desplegar y sembrar
 
 Pulsa **Deploy**. Cuando los tres servicios estén arriba, abre la terminal del
 servicio `api` y ejecuta la semilla una vez:
