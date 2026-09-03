@@ -29,6 +29,11 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger("seed")
 
 
+def _default_of(field_name: str) -> object:
+    """Built-in default of a setting, used to spot a variable that never arrived."""
+    return Settings.model_fields[field_name].default
+
+
 def select_catalog_source(settings: Settings) -> CatalogSource:
     """Prefer the official spreadsheets, fall back to the curated JSON.
 
@@ -63,7 +68,27 @@ async def seed_catalog(repository: TariffItemRepository, source: CatalogSource) 
 async def seed_user(
     repository: UserRepository, hasher: PasswordHasher, settings: Settings
 ) -> User:
-    """Create or refresh the single demo user (no sign-up exists in the MVP)."""
+    """Create or refresh the single demo user (no sign-up exists in the MVP).
+
+    The password is reported by length, never by value: the seed log is read
+    over someone's shoulder during a demo.
+    """
+    # A missing SEED_USER_PASSWORD does not fail: pydantic falls back to the
+    # field default and the seed writes a user whose password is not the one
+    # the operator configured. The seed cannot tell an absent variable from one
+    # explicitly set to the same value, so it reports the fact, not the cause.
+    if settings.seed_user_password == _default_of("seed_user_password"):
+        logger.warning(
+            "La contraseña sembrada es la de por defecto del código. Si esperabas "
+            "otra, SEED_USER_PASSWORD no llegó a este proceso."
+        )
+
+    logger.info(
+        "Sembrando usuario %s (contraseña de %d caracteres)",
+        settings.seed_user_email,
+        len(settings.seed_user_password),
+    )
+
     user = User(
         email=settings.seed_user_email,
         password_hash=hasher.hash(settings.seed_user_password),
