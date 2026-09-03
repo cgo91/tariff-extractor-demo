@@ -42,7 +42,13 @@ services:
       mongo:
         condition: service_healthy
     networks:
-      - internal
+      internal:
+        # `web` is attached to dokploy-network too, where other stacks publish
+        # their own service named `api`. Docker resolves a bare name across
+        # every attached network, so nginx could reach the wrong container.
+        # This alias is unique to this project and removes the ambiguity.
+        aliases:
+          - tariff-api
 
   web:
     build:
