@@ -1,0 +1,72 @@
+# Production stack for Dokploy.
+#
+# Differs from docker-compose.yml in four ways that matter on a public host:
+#   - only `web` is published; the API and MongoDB are unreachable from outside
+#   - no source bind mounts and no --reload: the image is the artifact
+#   - uploads and PDFs live in Dokploy's ../files directory so a redeploy does
+#     not erase them
+#   - Traefik labels terminate TLS on the domain
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Always reach Mongo through the compose network, whatever .env says.
+      MONGO_URI: mongodb://mongo:27017
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    volumes:
+      # Persistent across deployments: Dokploy clears the code directory on
+      # every build but keeps ../files untouched.
+      - ../files/uploads:/data/uploads
+      - ../files/pedimentos:/data/pedimentos
+      # The curated catalog is versioned in git and only ever read.
+      - ./data/catalog:/data/catalog:ro
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - internal
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    networks:
+      # `internal` reaches the API, `dokploy-network` reaches Traefik.
+      - internal
+      - dokploy-network
+    labels:
+      - traefik.enable=true
+      # Router and service names must be unique across the whole Dokploy host.
+      - traefik.http.routers.tariff-web.rule=Host(`REPLACE_WITH_YOUR_DOMAIN`)
+      - traefik.http.routers.tariff-web.entrypoints=websecure
+      - traefik.http.routers.tariff-web.tls.certResolver=letsencrypt
+      - traefik.http.services.tariff-web.loadbalancer.server.port=80
+
+volumes:
+  mongo_data:
+
+networks:
+  internal:
+  dokploy-network:
+    external: true

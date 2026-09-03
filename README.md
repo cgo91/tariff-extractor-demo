@@ -132,6 +132,64 @@ API, así que no hay nada más que configurar.
 
 ---
 
+## Despliegue en un VPS con Dokploy
+
+`docker-compose.prod.yml` describe el stack de producción: nginx sirve el SPA
+compilado y hace proxy de `/api` hacia FastAPI en el mismo origen, de modo que
+solo el servicio `web` queda publicado. La API y MongoDB no son alcanzables
+desde fuera de la red de compose.
+
+### 1. Preparar el servidor
+
+Un VPS con Docker y Dokploy instalado (`curl -sSL https://dokploy.com/install.sh | sh`),
+mínimo 2 GB de RAM: la compilación del frontend y WeasyPrint no caben cómodos en 1 GB.
+Apunta un registro A del dominio a la IP antes de desplegar, porque Let's Encrypt
+valida por HTTP.
+
+### 2. Crear el proyecto
+
+En Dokploy: **Project -> Create Service -> Compose**, conecta el repositorio,
+rama `main`, y en *Compose Path* escribe `docker-compose.prod.yml`.
+
+### 3. Sustituir el dominio
+
+En `docker-compose.prod.yml`, cambia `REPLACE_WITH_YOUR_DOMAIN` por tu dominio.
+Los nombres de router y servicio de Traefik (`tariff-web`) deben ser únicos en
+todo el host de Dokploy.
+
+### 4. Variables de entorno
+
+En la pestaña *Environment* pega el contenido de `.env.example` con los valores
+reales. Tres cambian respecto al entorno local:
+
+```
+JWT_SECRET=<cadena aleatoria de 32+ caracteres>
+SEED_USER_PASSWORD=<no dejes demo1234 en una URL publica>
+CORS_ORIGINS=https://tu-dominio.com
+```
+
+`MONGO_URI` lo fija el compose; lo que pongas aquí se ignora.
+
+### 5. Desplegar y sembrar
+
+Pulsa **Deploy**. Cuando los tres servicios estén arriba, abre la terminal del
+servicio `api` y ejecuta la semilla una vez:
+
+```bash
+python -m app.seed.seed
+```
+
+Verifica con `curl -s https://tu-dominio.com/api/health`, que debe responder
+`{"status":"ok","database":"connected","catalog_items":63}`.
+
+### Persistencia
+
+Las fotografías subidas y los PDFs generados se montan en `../files/`, el
+directorio que Dokploy conserva entre despliegues; el directorio del código se
+borra en cada build. La base de datos vive en el volumen `mongo_data`.
+
+---
+
 ## Resultados medidos
 
 Corrida completa contra la API de Claude con las nueve fotografías de
