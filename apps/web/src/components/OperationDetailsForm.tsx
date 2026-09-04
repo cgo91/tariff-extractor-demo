@@ -15,6 +15,8 @@ interface OperationDetailsFormProps {
   config: AppConfig
   /** Values already saved, when the user comes back to edit them. */
   saved: OperationDetails | null
+  /** UMT of the confirmed tariff item: the unit the quantity is counted in. */
+  unitOfMeasure: string | null
   onSubmit: (details: OperationDetails) => Promise<void>
   isSubmitting: boolean
   /** Why the form is locked, shown under it; null means it accepts input. */
@@ -98,6 +100,7 @@ function validate(state: FormState): Partial<Record<keyof FormState, string>> {
 export function OperationDetailsForm({
   config,
   saved,
+  unitOfMeasure,
   onSubmit,
   isSubmitting,
   disabledReason,
@@ -162,7 +165,7 @@ export function OperationDetailsForm({
               error={errorFor('invoiceValue')}
             />
             <FieldInput
-              label="Cantidad"
+              label={unitOfMeasure ? `Cantidad (${unitOfMeasure})` : 'Cantidad'}
               inputMode="numeric"
               value={state.quantity}
               onChange={(event) => update('quantity', event.target.value)}
@@ -176,7 +179,7 @@ export function OperationDetailsForm({
               error={errorFor('originCountry')}
             />
             <FieldInput
-              label="Tipo de cambio"
+              label="Tipo de cambio (MXN/USD)"
               inputMode="decimal"
               value={state.exchangeRate}
               onChange={(event) => update('exchangeRate', event.target.value)}

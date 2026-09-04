@@ -14,7 +14,7 @@ import { PedimentoPanel } from '@/components/PedimentoPanel'
 import { SettlementPanel } from '@/components/SettlementPanel'
 import { StepTrail } from '@/components/StepTrail'
 import type { OperationFlow } from '@/hooks/useOperationFlow'
-import type { AppConfig, Operation } from '@/types/api'
+import type { AppConfig, Operation, TariffItem } from '@/types/api'
 
 /** The missing prerequisite for generating the pedimento, if any. */
 function pedimentoBlockedReason(operation: Operation): string | null {
@@ -30,13 +30,15 @@ function pedimentoBlockedReason(operation: Operation): string | null {
   return null
 }
 
-/** IGI rate of the confirmed item, read from the candidates already loaded. */
-function igiRateFor(operation: Operation): number | null {
+/**
+ * The catalog entry behind the current classification, read from the
+ * candidates already loaded. It carries the IGI rate the settlement was
+ * computed with and the unit the quantity is expressed in (UMT).
+ */
+function confirmedItem(operation: Operation): TariffItem | null {
   if (!operation.classification) return null
-  const match = operation.candidates.find(
-    (candidate) => candidate.tariff_code === operation.classification!.tariff_code,
-  )
-  return match?.igi_rate ?? null
+  const code = operation.classification.tariff_code
+  return operation.candidates.find((candidate) => candidate.tariff_code === code) ?? null
 }
 
 interface OperationWorkspaceProps {
@@ -53,6 +55,7 @@ export function OperationWorkspace({ flow, config, sidebarAction }: OperationWor
   // Once the pedimento exists the API rejects every edit with a 409, so the
   // panels show the record without offering controls that can only fail.
   const isLocked = operation.status === 'pedimento_generated'
+  const item = confirmedItem(operation)
 
   return (
     <div className="space-y-8">
@@ -139,6 +142,7 @@ export function OperationWorkspace({ flow, config, sidebarAction }: OperationWor
                 <OperationDetailsForm
                   config={config}
                   saved={operation.operation_details}
+                  unitOfMeasure={item?.unit_of_measure ?? null}
                   onSubmit={flow.saveDetails}
                   isSubmitting={pending === 'details'}
                   disabledReason={
@@ -151,10 +155,11 @@ export function OperationWorkspace({ flow, config, sidebarAction }: OperationWor
                 />
               ) : null}
 
-              {operation.settlement ? (
+              {operation.settlement && operation.operation_details ? (
                 <SettlementPanel
                   settlement={operation.settlement}
-                  igiRate={igiRateFor(operation)}
+                  details={operation.operation_details}
+                  igiRate={item?.igi_rate ?? null}
                 />
               ) : null}
 

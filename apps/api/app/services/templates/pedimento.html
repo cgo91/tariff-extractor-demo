@@ -137,6 +137,17 @@
         color: #6b736e;
       }
 
+      /* Column heads borrow the field-label voice: the unit is stated once. */
+      .settlement .head td {
+        font-family: "DejaVu Sans", sans-serif;
+        font-size: 5.8pt;
+        font-weight: bold;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #8b948f;
+        padding-bottom: 0.8mm;
+      }
+
       .settlement .total td {
         border-top: 1.5pt solid #16211d;
         border-bottom: 0;
@@ -231,7 +242,7 @@
           <span class="value">{{ header.issued_at }}</span>
         </td>
         <td>
-          <span class="label">Tipo de cambio</span>
+          <span class="label">Tipo de cambio (MXN/USD)</span>
           <span class="value">{{ details.exchange_rate }}</span>
         </td>
         <td>
@@ -322,10 +333,17 @@
 
     <h2>Determinación de contribuciones</h2>
     <table class="settlement">
+      <tr class="head">
+        <td class="concept" style="width: 52%">Concepto</td>
+        <td class="rate" style="width: 24%">Tasa o cálculo</td>
+        <td class="amount" style="width: 24%">Importe (MXN)</td>
+      </tr>
       <tr>
-        <td class="concept" style="width: 52%">Valor en aduana</td>
-        <td class="rate" style="width: 24%">base gravable</td>
-        <td class="amount" style="width: 24%">{{ settlement.customs_value }}</td>
+        <td class="concept">Valor en aduana · base gravable</td>
+        <!-- The only amount not derived from another: spelling out the
+             multiplication is what states both currencies on the document. -->
+        <td class="rate">{{ details.invoice_value_usd }} USD × {{ details.exchange_rate }}</td>
+        <td class="amount">{{ settlement.customs_value }}</td>
       </tr>
       <tr>
         <td class="concept">IGI · Impuesto General de Importación</td>
